@@ -1,0 +1,62 @@
+# AGENTS.md — ActiveLens (GUI)
+
+## What it is
+
+macOS menu-bar app (SwiftUI) that shows your Mac work log — when you started,
+took breaks, and finished. Thin front-end over the bundled
+[`active-lens`](../active-lens) CLI, which does the sampling/storage/aggregation.
+**macOS 14+, Apple Silicon.** Sibling of `claude-usage-lens-gui` (same
+architecture).
+
+## Build / test / run
+
+```sh
+make build      # swift build -c release
+make build-app  # assemble + Developer-ID sign dist/ActiveLens.app (bundles the CLI)
+make package    # notarize + staple + zip the release asset
+make test       # swift test
+make run        # swift run (debug)
+```
+
+`build-app` embeds `CLI_BIN` (default `../active-lens/dist/active-lens`) into
+`Contents/Resources/active-lens`; build the CLI first (`make build` in that repo).
+App is `LSUIElement` (menu bar, no Dock icon). Version comes from `git describe`
+via the Makefile → Info.plist.
+
+## Layout
+
+```
+Sources/ActiveLens/
+  App.swift            MenuBarExtra (state icon + today's active time) + Analysis Window
+  PopoverView.swift    today's work session + Record-in-background toggle
+  AnalysisView.swift   Swift Charts: calendar work-timeline (day columns) + work-log list
+  ActivityModel.swift  ObservableObject; 60s refresh; App Nap opt-out; CLI calls off-main
+  CLIRunner.swift      locate + run the CLI, decode --json (PURE resolveBinary)
+  Models.swift         Codable mirrors of the CLI JSON (Timeline/DaemonStatus/…)
+  Formatting.swift     PURE duration/axis formatting + the state color palette
+Tests/ActiveLensTests/ Format, binary resolution, decode, status/recording
+Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
+```
+
+## Design invariants / gotchas
+
+- **The CLI is the single source of truth.** This app only formats and charts
+  `--json`. Don't reimplement sampling/aggregation here.
+- **Bundled CLI is the trust anchor.** `resolveBinary` puts the bundle's signed
+  copy ahead of everything; `$ACTIVE_LENS_BIN` works only in DEBUG. Keep it that
+  way so a release build can't be redirected to an unsigned binary.
+- **Enabling recording registers the bundled binary** as the LaunchAgent, so the
+  daemon path lives inside the .app — moving/deleting the app breaks recording.
+- **All CLI work is off the main thread**; @Published mutations hop to main.
+  App Nap is opted out (menu-bar app) so the 60s timer keeps firing.
+- **Format.duration mirrors the CLI's formatSeconds** (a test pins this) so the
+  GUI and `active-lens report` never disagree.
+- Chart colors: operating=green, present=blue, away=gray — one palette
+  (`ActivityPalette`) shared by popover dots and chart scales.
+
+## Status
+
+Phase 2 complete: `swift build` / `swift test` (16 tests) green; `.app` builds,
+Developer-ID signs, spctl-accepts, and was launch-verified end-to-end (the signed
+app invoked the bundled CLI and created the data store under Hardened Runtime).
+No app icon yet (`assets/AppIcon-1024.png` absent — builds without one).

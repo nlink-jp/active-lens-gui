@@ -1,0 +1,72 @@
+# ActiveLens (GUI)
+
+Mac の**勤務ログ**——いつ始業し、休憩し、終業したか——をメニューバーに表示する macOS
+アプリ。ただし**「何を操作したか」は一切記録しません**。
+[`active-lens`](../active-lens) CLI（サンプリング・蓄積・集計をすべて担当）の上に乗る
+薄い SwiftUI フロントエンドです。
+
+- **メニューバー**: 現在の状態（操作中/閲覧のみ/離席）と今日の実働時間をひと目で。
+- **ポップオーバー**: 今日のワークセッション——実働時間・始業時刻・操作中/閲覧の内訳・
+  休憩——と、バックグラウンド記録の ON/OFF スイッチ（ログイン時起動の launchd エージェ
+  ントを登録）。
+- **分析ウィンドウ**: カレンダー風の**稼働タイムライン**——1列＝1日、各列で時刻が上
+  （朝）から下（夜）へ流れ、状態で色分け——で、日をまたいで「いつマシンに向かっていたか」
+  を見比べられます。その下に日別の勤務ログ（始業→終業・実働・休憩）。直近 7 / 30 / 90 日、
+  Swift Charts で描画。
+
+3 状態：
+
+- **操作中 (operating)** — 起きてる・画面ON・閾値以内に入力あり
+- **閲覧のみ (present)** — 起きてる・画面ONだが直近の入力なし（視聴・閲覧）
+- **離席 (away)** — 画面OFF・ロック・スリープ
+
+> **対応環境:** macOS 14+ / Apple Silicon。Developer ID 署名 + notarize 済み。
+
+## 構成
+
+```
+┌─────────────────────────┐        ┌──────────────────────────┐
+│  ActiveLens.app (SwiftUI)│  --json │  active-lens (Go CLI)     │
+│  メニューバー + Swift Charts│───────▶│  サンプル・蓄積・集計       │
+└─────────────────────────┘        └──────────────────────────┘
+        薄いフロントエンド                   単一の真実の源
+```
+
+署名済み `active-lens` CLI はアプリ内に**同梱**され
+（`Contents/Resources/active-lens`）、信頼の起点になります。アプリは PATH 上の任意の
+バイナリではなく同梱コピーを実行します。バックグラウンド記録を有効化すると、その同梱
+バイナリを launchd LaunchAgent として登録するので、インストールした場所からアプリを
+移動しないでください。
+
+## インストール
+
+Releases から notarize 済みの `ActiveLens-<version>-macos-arm64.zip` をダウンロードして
+展開し、`ActiveLens.app` を `/Applications` にドラッグします。起動するとメニューバーに
+常駐します（Dock アイコンなし）。
+
+その後、メニューバーのポップオーバーで **Record in background** を ON にすると、日次の
+アクティビティ収集が始まります。
+
+## ソースからビルド
+
+```sh
+make build        # swift build -c release
+make build-app    # dist/ActiveLens.app を組み立て+署名（CLI 同梱）
+make package      # notarize + staple + zip（リリース用）
+make test         # swift test
+make run          # ビルドして実行（デバッグ）
+```
+
+`build-app` は `../active-lens/dist/active-lens` から CLI を同梱します
+（`CLI_BIN=…` で上書き可）。先に当該リポジトリで `make build` して CLI を作ってください。
+
+## プライバシー
+
+ActiveLens が表示するのは 3 状態の集計時間のみです。基盤の CLI が読むのは
+「最後の入力からの経過秒」と 2 つの在席真偽値だけで、キーストローク・マウス座標・
+ウィンドウ名・アプリ名は一切読みません。Accessibility や Input Monitoring の権限も
+不要です。データが端末外へ出ることはありません。
+
+## ライセンス
+
+MIT — [LICENSE](LICENSE) 参照。
