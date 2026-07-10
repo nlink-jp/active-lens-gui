@@ -6,6 +6,10 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-10
+
+> Requires `active-lens` v0.2.0, which ships bundled inside the app.
+
 ### Changed
 
 - **The menu bar now shows the session you are in, not "today".** The headline is
@@ -53,5 +57,6 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nlink-jp/active-lens-gui/releases/tag/v0.1.0
