@@ -34,4 +34,22 @@ final class FormatTests: XCTestCase {
         let hours = Double(nineThirty - mid) / 3600.0
         XCTAssertEqual(hours, 9.5, accuracy: 0.001)
     }
+
+    func testClockLabelMapsOffsetsBackToWallClock() {
+        // A day starting at 04:00: offset 0 is 4am, offset 20 is midnight, and an
+        // offset past a full day wraps — a session may outlive its own day.
+        XCTAssertEqual(Format.clockLabel(offsetHours: 0, dayStartHour: 4), "4:00")
+        XCTAssertEqual(Format.clockLabel(offsetHours: 16, dayStartHour: 4), "20:00")
+        XCTAssertEqual(Format.clockLabel(offsetHours: 20, dayStartHour: 4), "0:00")
+        XCTAssertEqual(Format.clockLabel(offsetHours: 29, dayStartHour: 4), "9:00")
+        // day_start_hour = 0 makes the offset the clock hour itself.
+        XCTAssertEqual(Format.clockLabel(offsetHours: 13, dayStartHour: 0), "13:00")
+    }
+
+    func testPeriodDays() {
+        XCTAssertEqual(ActivityModel.periodDays("7d"), 7)
+        XCTAssertEqual(ActivityModel.periodDays("90d"), 90)
+        XCTAssertEqual(ActivityModel.periodDays("nonsense"), 7)
+        XCTAssertEqual(ActivityModel.periodDays("0d"), 7)
+    }
 }

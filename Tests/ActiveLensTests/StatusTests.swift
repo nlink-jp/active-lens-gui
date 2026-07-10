@@ -37,14 +37,9 @@ final class StatusTests: XCTestCase {
         XCTAssertFalse(s.isRecording(now: now))
     }
 
-    func testCalendarSinceSpansNCalendarDays() {
-        let tz = TimeZone(identifier: "UTC")!
-        let now = Date(timeIntervalSince1970: 1_783_600_000) // fixed instant
-        let since = ActivityModel.calendarSince("7d", from: now, tz: tz)
-        // 7d window: start is 6 days before today's date.
-        XCTAssertEqual(since.count, 10) // YYYY-MM-DD
-        XCTAssertEqual(ActivityModel.calendarSince("bogus", from: now, tz: tz), "bogus")
-    }
+    // The range is no longer computed here: `timeline --days N` resolves it against
+    // the CLI's own logical day boundary. Only the period → N mapping remains, and
+    // it is covered by FormatTests.testPeriodDays.
 
     func testSummarizeErrors() {
         XCTAssertTrue(CLIError.summarize(exitCode: 1, crashed: true, stderr: "").contains("stopped unexpectedly"))

@@ -135,6 +135,18 @@ enum CLIRunner {
         try JSONDecoder().decode(DaemonStatus.self, from: run(["status", "--json"]))
     }
 
+    /// The session in progress right now, plus the logical day it is filed under.
+    static func now() throws -> NowReport {
+        try JSONDecoder().decode(NowReport.self, from: run(["now", "--json"]))
+    }
+
+    /// The last `days` logical days. The CLI resolves the range against its own
+    /// day boundary, so this app never reimplements that arithmetic.
+    static func timeline(days: Int) throws -> TimelineReport {
+        try JSONDecoder().decode(
+            TimelineReport.self, from: run(["timeline", "--days", String(days), "--json"]))
+    }
+
     static func timeline(since: String, until: String? = nil) throws -> TimelineReport {
         var args = ["timeline", "--since", since, "--json"]
         if let until { args += ["--until", until] }

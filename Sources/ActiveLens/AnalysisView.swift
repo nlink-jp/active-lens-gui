@@ -1,14 +1,19 @@
 import Charts
 import SwiftUI
 
-/// The analysis window: a calendar-style work timeline — one column per day, time
-/// running down each column (morning at top) — so you can scan across days and
-/// see *when* you started, took breaks, and finished. Plus a per-day work-log
-/// list. Data comes from `active-lens timeline --json`.
+/// The analysis window: a calendar-style work timeline — one column per logical
+/// day, time running down each column (the day's start at top) — so you can scan
+/// across days and see *when* you started, took breaks, and finished. Plus a
+/// per-day work-log list. Data comes from `active-lens timeline --json`.
 struct AnalysisView: View {
     @EnvironmentObject var model: ActivityModel
+    @State private var hover: HoverInfo?
 
     private var days: [TimelineDay] { model.timeline?.days ?? [] }
+
+    /// The hour a logical day begins at, from the payload. Chart offsets are
+    /// measured from it; axis labels are mapped back to wall clock through it.
+    private var dayStartHour: Int { model.timeline?.dayStartHour ?? 0 }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -105,9 +110,9 @@ struct AnalysisView: View {
         }
         .chartForegroundStyleScale(domain: ActivityPalette.chartDomain, range: ActivityPalette.chartRange)
         .chartXScale(domain: days.map(\.date)) // oldest left, newest right
-        // Inverted y (descending domain) puts morning at the top, like a calendar.
-        // The ±0.4h padding keeps the top/bottom hour labels off the edge so they
-        // aren't clipped.
+        // Inverted y (descending domain) puts the start of the day at the top, like
+        // a calendar. The ±0.4h padding keeps the top/bottom hour labels off the
+        // edge so they aren't clipped.
         .chartYScale(domain: [hoursBounds.hi + 0.4, hoursBounds.lo - 0.4])
         .chartXAxis {
             AxisMarks(values: xTicks) { value in
@@ -121,11 +126,101 @@ struct AnalysisView: View {
             AxisMarks(position: .leading, values: hourTicks) { value in
                 AxisGridLine()
                 if let h = value.as(Double.self) {
-                    AxisValueLabel { Text(String(format: "%d:00", Int(h.rounded()))) }
+                    AxisValueLabel { Text(Format.clockLabel(offsetHours: h, dayStartHour: dayStartHour)) }
                 }
             }
         }
         .chartLegend(position: .bottom, spacing: 8)
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle().fill(.clear).contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let point): hover = hoverInfo(at: point, proxy: proxy, geo: geo)
+                        case .ended: hover = nil
+                        }
+                    }
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if let hover {
+                blockTooltip(hover)
+                    .offset(x: hover.cardX, y: hover.cardY)
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    // MARK: - Hover
+
+    /// What the pointer is over, plus where to draw the card.
+    struct HoverInfo: Equatable {
+        let date: String
+        let block: TimelineBlock
+        let cardX: CGFloat
+        let cardY: CGFloat
+    }
+
+    private static let cardSize = CGSize(width: 190, height: 96)
+
+    /// Map a pointer position to the block under it. Blocks — not raw segments —
+    /// because at 260pt over ~13 hours one minute is about a third of a point, so a
+    /// two-minute `present` segment is sub-pixel and cannot be aimed at.
+    private func hoverInfo(at point: CGPoint, proxy: ChartProxy, geo: GeometryProxy) -> HoverInfo? {
+        guard let plotFrame = proxy.plotFrame else { return nil }
+        let rect = geo[plotFrame]
+        guard rect.contains(point) else { return nil }
+
+        let local = CGPoint(x: point.x - rect.minX, y: point.y - rect.minY)
+        guard let date: String = proxy.value(atX: local.x),
+              let hours: Double = proxy.value(atY: local.y),
+              let day = days.first(where: { $0.date == date }),
+              let block = day.block(atHours: hours)
+        else { return nil }
+
+        // Keep the card inside the chart: flip it left / up near the far edges.
+        let size = Self.cardSize
+        let x = min(max(point.x + 12, 0), max(geo.size.width - size.width, 0))
+        let y = min(max(point.y + 12, 0), max(geo.size.height - size.height, 0))
+        return HoverInfo(date: date, block: block, cardX: x, cardY: y)
+    }
+
+    @ViewBuilder
+    private func blockTooltip(_ h: HoverInfo) -> some View {
+        let b = h.block
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(b.kind == .work ? ActivityPalette.color(.operating) : ActivityPalette.color(.away))
+                    .frame(width: 7, height: 7)
+                Text(b.kind == .work ? "Work" : "Break").font(.caption.weight(.semibold))
+                Spacer()
+                Text(Format.shortDay(h.date)).font(.caption2).foregroundStyle(.secondary)
+            }
+            Text("\(b.start) – \(b.end)").font(.callout.monospacedDigit())
+            Text(Format.duration(b.seconds)).font(.caption).foregroundStyle(.secondary)
+            if b.kind == .work {
+                HStack(spacing: 10) {
+                    splitLabel("Operating", b.operatingSeconds, .operating)
+                    splitLabel("Present", b.presentSeconds, .present)
+                }
+                .font(.caption2)
+            }
+        }
+        .padding(8)
+        .frame(width: Self.cardSize.width, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.separator))
+        .shadow(radius: 3, y: 1)
+    }
+
+    private func splitLabel(_ title: String, _ seconds: Int, _ state: ActivityState) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(ActivityPalette.color(state)).frame(width: 5, height: 5)
+            Text(title).foregroundStyle(.secondary)
+            Text(Format.duration(seconds)).monospacedDigit()
+        }
     }
 
     // MARK: - Chart data & scales
@@ -153,13 +248,16 @@ struct AnalysisView: View {
         }
     }
 
-    /// Auto-fit the time (y) axis to the hours actually worked (padded, 0…24).
+    /// Auto-fit the time (y) axis to the hours actually worked. The upper bound is
+    /// deliberately *not* clamped to 24: a session that ran through the next day's
+    /// boundary is filed here whole, and clipping it would hide the very spans the
+    /// engine keeps intact.
     private var hoursBounds: (lo: Double, hi: Double) {
         let work = days.filter(\.hasWork)
         let starts = work.map { $0.hours($0.workStartUnix) }
         let ends = work.map { $0.hours($0.workEndUnix) }
         guard let lo = starts.min(), let hi = ends.max(), lo < hi else { return (0, 24) }
-        return (max(0, (lo - 0.5).rounded(.down)), min(24, (hi + 0.5).rounded(.up)))
+        return (max(0, (lo - 0.5).rounded(.down)), (hi + 0.5).rounded(.up))
     }
 
     private var hourTicks: [Double] {
@@ -215,10 +313,16 @@ struct AnalysisView: View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(Format.shortDay(d.date)).font(.callout.monospacedDigit()).frame(width: 52, alignment: .leading)
             if d.hasWork {
-                Text("\(d.workStart) → \(d.workEnd)").font(.callout.monospacedDigit())
+                // A session that ran past midnight ends on the next calendar day;
+                // "22:00 → 01:00" would otherwise read as a 21-hour backwards span.
+                Text("\(d.workStart) → \(d.workEnd)\(Format.nextDayMark(d))")
+                    .font(.callout.monospacedDigit())
                 Text("active \(Format.duration(d.activeSeconds))")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()
+                if d.sessions.count > 1 {
+                    Text("\(d.sessions.count) sessions").font(.caption2).foregroundStyle(.tertiary)
+                }
                 if d.breaks.isEmpty {
                     Text("no breaks").font(.caption2).foregroundStyle(.tertiary)
                 } else {

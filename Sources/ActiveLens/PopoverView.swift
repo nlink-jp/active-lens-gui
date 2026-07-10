@@ -1,23 +1,24 @@
 import AppKit
 import SwiftUI
 
-/// The dropdown shown when the menu-bar item is clicked: today's work log —
-/// when you started, active time, breaks — plus the current state, the
-/// background-recording toggle, and buttons to open Analysis / refresh / quit.
+/// The dropdown shown when the menu-bar item is clicked: the session you are in
+/// right now — when it started, active time, breaks — plus the logical day's
+/// total, the current state, the background-recording toggle, and buttons to open
+/// Analysis / refresh / quit.
 struct PopoverView: View {
     @EnvironmentObject var model: ActivityModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Today").font(.headline)
+            Text(sessionTitle).font(.headline)
 
-            if let d = model.todayTimeline, d.hasWork {
-                workSession(d)
+            if let s = model.now?.session {
+                workSession(s)
             } else if let err = model.lastError {
                 errorBlock(err)
-            } else if model.todayTimeline != nil {
-                Text("No activity recorded today yet.")
+            } else if model.now != nil {
+                Text("No work session recorded yet.")
                     .font(.callout).foregroundStyle(.secondary)
             } else {
                 HStack { Spacer(); ProgressView(); Spacer() }.frame(height: 60)
@@ -40,49 +41,67 @@ struct PopoverView: View {
                     NSApp.activate(ignoringOtherApps: true)
                 }
                 Spacer()
-                Button("Refresh") { model.refreshToday() }
+                Button("Refresh") { model.refreshNow() }
                 Button("Quit") { NSApp.terminate(nil) }
             }
             .controlSize(.small)
         }
         .padding(14)
         .frame(width: 320)
-        .onAppear { model.refreshToday() }
+        .onAppear { model.refreshNow() }
     }
 
-    // MARK: - Today's work session
+    /// The heading names the session's state, because "Session" alone would leave
+    /// a paused or finished stretch looking like a running one.
+    private var sessionTitle: String {
+        guard let s = model.now?.session else { return "Session" }
+        if !s.open { return "Last session" }
+        return s.paused ? "Session (paused)" : "Session"
+    }
+
+    // MARK: - The now-session
 
     @ViewBuilder
-    private func workSession(_ d: TimelineDay) -> some View {
-        Text(Format.duration(d.activeSeconds))
+    private func workSession(_ s: NowSession) -> some View {
+        Text(Format.duration(s.activeSeconds))
             .font(.system(size: 30, weight: .semibold, design: .rounded))
             .monospacedDigit()
         HStack(spacing: 6) {
             Text("active").foregroundStyle(.secondary)
             Text("·").foregroundStyle(.tertiary)
-            Text("started \(d.workStart)")
-            if model.currentState == nil || model.currentState == .away {
-                Text("· ended \(d.workEnd)").foregroundStyle(.secondary)
+            Text("started \(s.start)")
+            // An open session's end is just "the last thing you did", so showing it
+            // would read as a finish time. Show it only once the session has closed.
+            if !s.open {
+                Text("· ended \(s.end)").foregroundStyle(.secondary)
             }
         }
         .font(.callout)
 
         Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 4) {
-            metricRow("Operating", Format.duration(d.operatingSeconds), .operating)
-            metricRow("Present", Format.duration(d.presentSeconds), .present)
-            if !d.breaks.isEmpty {
+            metricRow("Operating", Format.duration(s.operatingSeconds), .operating)
+            metricRow("Present", Format.duration(s.presentSeconds), .present)
+            if !s.breaks.isEmpty {
                 GridRow {
                     Text("Breaks").foregroundStyle(.secondary)
                     Spacer()
-                    Text("\(d.breaks.count) · \(Format.duration(d.breaks.reduce(0) { $0 + $1.seconds }))")
+                    Text("\(s.breaks.count) · \(Format.duration(s.breaks.reduce(0) { $0 + $1.seconds }))")
+                        .monospacedDigit().gridColumnAlignment(.trailing)
+                }
+            }
+            if let day = model.now?.day {
+                GridRow {
+                    Text("Today").foregroundStyle(.secondary)
+                    Spacer()
+                    Text(Format.duration(day.activeSeconds))
                         .monospacedDigit().gridColumnAlignment(.trailing)
                 }
             }
         }
         .font(.callout)
 
-        if !d.breaks.isEmpty {
-            Text(d.breaks.map { "\($0.start)–\($0.end)" }.joined(separator: "   "))
+        if !s.breaks.isEmpty {
+            Text(s.breaks.map { "\($0.start)–\($0.end)" }.joined(separator: "   "))
                 .font(.caption2).foregroundStyle(.tertiary)
         }
     }

@@ -19,11 +19,16 @@ The dot under the toggle turns green once the first sample lands ("Recording").
 
 ## 3. Read your day
 
-- The **menu bar** shows the current state and today's *active* time.
-- The **popover** shows today's work session: active time, when you started, the
-  operating/present split, and any breaks.
+- The **menu bar** shows the current state and the *active* time of the session
+  you are in right now. It resets when a new session begins — after a night's
+  sleep, or any absence of four hours or more.
+- The **popover** shows that session: active time, when it started, the
+  operating/present split, its breaks, and **Today**'s total beneath them. While
+  you are briefly away it reads *paused*, not finished.
 - **Analysis…** opens the calendar-style work timeline — one column per day, time
   down each column — plus a per-day work log, over the last 7 / 30 / 90 days.
+  Hover a block to see its start, end, and duration. An evening that ran past
+  midnight stays on the day it began, so its column extends past 24 hours.
 
 ## What the states mean
 

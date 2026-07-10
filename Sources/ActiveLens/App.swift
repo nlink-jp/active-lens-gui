@@ -10,9 +10,9 @@ struct ActiveLensApp: App {
             PopoverView()
                 .environmentObject(model)
         } label: {
-            // Current state glyph + today's active (operating + present) time.
+            // Current state glyph + the active time of the session you are in.
             Image(systemName: model.currentState?.icon ?? "pause.circle")
-            Text(model.todayActiveLabel)
+            Text(model.sessionActiveLabel)
         }
         .menuBarExtraStyle(.window)
 

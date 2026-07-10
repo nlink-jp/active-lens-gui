@@ -5,16 +5,16 @@ breaks, and finished each day — **without recording anything about *what* you
 do**. It's a thin SwiftUI front-end over the [`active-lens`](../active-lens) CLI,
 which does all the sampling, storage, and aggregation.
 
-- **Menu bar**: the current state (operating / present / away) and today's active
-  time, at a glance.
-- **Popover**: today's work session — active time, when you started, the
-  operating/present split and breaks — plus a switch to enable background
+- **Menu bar**: the current state (operating / present / away) and the active time
+  of the **session you are in right now**, at a glance.
+- **Popover**: that session — active time, when it started, the operating/present
+  split and its breaks — plus today's total and a switch to enable background
   recording (installs a login-time launchd agent).
 - **Analysis window**: a calendar-style **work timeline** — one column per day,
-  time running down each column (morning at top), colored by state — so you can
-  scan across days and see *when* you were at the machine. Below it, a per-day
-  work log (start → end · active · breaks). Over the last 7 / 30 / 90 days,
-  rendered with Swift Charts.
+  time running down each column, colored by state — so you can scan across days
+  and see *when* you were at the machine. Hover any block for its start, end, and
+  duration. Below it, a per-day work log (start → end · active · breaks). Over the
+  last 7 / 30 / 90 days, rendered with Swift Charts.
 
 The three states:
 
@@ -23,6 +23,23 @@ The three states:
 - **away** — display off, locked, or asleep
 
 > **Platform:** macOS 14+ on Apple Silicon. Developer ID signed + notarized.
+
+## Sessions, not days
+
+The menu-bar number is a **session**: one unbroken stretch of work, ended by an
+absence of four hours or more. It therefore starts fresh each morning rather than
+carrying the hours you put in before midnight — the popover's **Today** row keeps
+that figure. Nor is a session cut at midnight: an evening that runs to 00:59 stays
+one session, filed under the evening it began, and its column in the analysis
+window simply extends past 24 hours to show it.
+
+While you are away for less than the session gap the session is **paused**, not
+finished; nothing can yet say whether a thirty-minute absence is a break or the
+end of the day. Its start time never changes.
+
+The CLI owns all of this. See
+[its README](../active-lens/README.md#sessions-and-logical-days) for the session
+gap and the logical day boundary, both configurable.
 
 ## How it fits together
 

@@ -1,11 +1,11 @@
 import Foundation
 
-/// ActivityModel drives the UI: it periodically pulls today's work-log timeline +
-/// daemon status for the menu bar / popover, and loads the range timeline for the
+/// ActivityModel drives the UI: it periodically pulls the now-session + daemon
+/// status for the menu bar / popover, and loads the range timeline for the
 /// analysis window on demand. All CLI work runs off the main thread; @Published
 /// mutations hop back to main.
 final class ActivityModel: ObservableObject {
-    @Published var todayTimeline: TimelineDay?
+    @Published var now: NowReport?
     @Published var status: DaemonStatus?
     @Published var lastError: String?
     @Published var lastErrorDetail: String?
@@ -19,40 +19,39 @@ final class ActivityModel: ObservableObject {
     private var activity: NSObjectProtocol?  // App Nap opt-out (held for the app's lifetime)
     private let queue = DispatchQueue(label: "jp.nlink.active-lens-gui.cli", qos: .utility)
 
-    /// Today's active (operating + present) time — the menu-bar headline.
-    var todayActiveLabel: String {
-        guard let d = todayTimeline, d.hasWork else {
+    /// The current session's active time — the menu-bar headline. It answers "how
+    /// long this stretch", so it resets when a new session opens (e.g. after a
+    /// night's sleep). The logical day's total lives in the popover's Today row.
+    var sessionActiveLabel: String {
+        guard let s = now?.session else {
             return lastError != nil ? "—" : "0s"
         }
-        return Format.duration(d.activeSeconds)
+        return Format.duration(s.activeSeconds)
     }
 
     /// The SF Symbol + tint reflecting the current live state (or idle look).
-    var currentState: ActivityState? { status?.currentState }
+    var currentState: ActivityState? { now?.currentState }
 
     func start() {
         // Opt out of App Nap so the 60s timer keeps firing while the app sits in
         // the menu bar. System sleep is still allowed.
         activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiatedAllowingIdleSystemSleep], reason: "activity monitoring")
-        refreshToday()
+        refreshNow()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            self?.refreshToday()
+            self?.refreshNow()
         }
     }
 
-    /// Pull today's work-log timeline and the daemon status for the menu bar +
-    /// popover.
-    func refreshToday() {
+    /// Pull the now-session and the daemon status for the menu bar + popover.
+    func refreshNow() {
         queue.async { [weak self] in
             guard let self else { return }
             do {
-                let today = Self.todayString()
-                let tl = try CLIRunner.timeline(since: today)
+                let now = try CLIRunner.now()
                 let status = try CLIRunner.status()
-                let day = tl.days.first(where: { $0.date == today }) ?? tl.days.last
                 DispatchQueue.main.async {
-                    self.todayTimeline = day
+                    self.now = now
                     self.status = status
                     self.lastError = nil
                     self.lastErrorDetail = nil
@@ -65,13 +64,13 @@ final class ActivityModel: ObservableObject {
     }
 
     /// Load the range timeline for the analysis window over the current period.
+    /// The CLI resolves the range against its own logical day boundary.
     func loadAnalysis() {
-        let period = self.period
+        let days = Self.periodDays(period)
         queue.async { [weak self] in
             guard let self else { return }
             do {
-                let since = Self.calendarSince(period)
-                let tl = try CLIRunner.timeline(since: since)
+                let tl = try CLIRunner.timeline(days: days)
                 DispatchQueue.main.async {
                     self.timeline = tl
                     self.lastError = nil
@@ -111,24 +110,10 @@ final class ActivityModel: ObservableObject {
         }
     }
 
-    /// Today's date as YYYY-MM-DD in the local zone.
-    static func todayString(from now: Date = Date(), tz: TimeZone = .current) -> String {
-        calendarSince("1d", from: now, tz: tz)
-    }
-
-    /// Turn a "Nd" period into a YYYY-MM-DD start date (today − (N−1) days) in the
-    /// local zone, so a daily series spans exactly N calendar days aligned to the
-    /// CLI's day buckets. Non-"Nd" periods pass through. Injectable for tests.
-    static func calendarSince(_ period: String, from now: Date = Date(), tz: TimeZone = .current) -> String {
-        guard period.hasSuffix("d"), let n = Int(period.dropLast()), n > 0 else { return period }
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = tz
-        let start = cal.date(byAdding: .day, value: -(n - 1), to: cal.startOfDay(for: now)) ?? now
-        let f = DateFormatter()
-        f.calendar = cal
-        f.timeZone = tz
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: start)
+    /// Turn a "Nd" period into a day count for `timeline --days`. Unknown periods
+    /// fall back to a week. Pure; injectable for tests.
+    static func periodDays(_ period: String) -> Int {
+        guard period.hasSuffix("d"), let n = Int(period.dropLast()), n > 0 else { return 7 }
+        return n
     }
 }

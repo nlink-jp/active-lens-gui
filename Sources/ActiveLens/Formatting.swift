@@ -33,6 +33,24 @@ enum Format {
     /// A clock-hour axis label for a fractional hour-of-day (0…24): "9", "13".
     static func clockAxis(_ h: Double) -> String { "\(Int(h.rounded()))" }
 
+    /// An axis label for an offset in hours from a logical day's start, mapped back
+    /// to the wall clock. A day beginning at 04:00 renders offset 20 as "0:00", so
+    /// a column running into the small hours still reads in real clock time.
+    /// Offsets past 24 wrap, since a session may outlive its own day.
+    static func clockLabel(offsetHours h: Double, dayStartHour: Int) -> String {
+        let hour = (dayStartHour + Int(h.rounded())) % 24
+        return String(format: "%d:00", (hour + 24) % 24)
+    }
+
+    /// "(+1)" when the day's work ended on the following calendar day.
+    static func nextDayMark(_ d: TimelineDay) -> String {
+        guard d.hasWork else { return "" }
+        let cal = Calendar.current
+        let start = Date(timeIntervalSince1970: TimeInterval(d.workStartUnix))
+        let end = Date(timeIntervalSince1970: TimeInterval(d.workEndUnix))
+        return cal.isDate(start, inSameDayAs: end) ? "" : " (+1)"
+    }
+
     /// Local midnight (epoch seconds) for a "yyyy-MM-dd" date string. Cached
     /// formatter keeps the per-segment lookups cheap.
     static func midnightEpoch(_ dateString: String) -> Int {
