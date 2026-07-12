@@ -59,7 +59,7 @@ you install it from.
 
 ## Install
 
-Download the notarized `ActiveLens-<version>-macos-arm64.zip` from Releases,
+Download the notarized `active-lens-gui-<version>-darwin-arm64.zip` from Releases,
 unzip, and drag `ActiveLens.app` to `/Applications`. Launch it; it lives in the
 menu bar (no Dock icon).
 

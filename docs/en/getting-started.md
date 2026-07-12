@@ -2,7 +2,7 @@
 
 ## 1. Install
 
-Unzip `ActiveLens-<version>-macos-arm64.zip` and move `ActiveLens.app` to
+Unzip `active-lens-gui-<version>-darwin-arm64.zip` and move `ActiveLens.app` to
 `/Applications`. Launch it — it appears in the menu bar (no Dock icon). The app
 is Developer ID signed and notarized, so Gatekeeper opens it without warnings.
 

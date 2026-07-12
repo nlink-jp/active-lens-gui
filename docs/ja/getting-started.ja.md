@@ -2,7 +2,7 @@
 
 ## 1. インストール
 
-`ActiveLens-<version>-macos-arm64.zip` を展開し、`ActiveLens.app` を
+`active-lens-gui-<version>-darwin-arm64.zip` を展開し、`ActiveLens.app` を
 `/Applications` に移動します。起動するとメニューバーに表示されます（Dock アイコンは
 ありません）。Developer ID 署名 + notarize 済みなので、Gatekeeper の警告なしに開けます。
 

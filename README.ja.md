@@ -55,7 +55,7 @@ Mac の**勤務ログ**——いつ始業し、休憩し、終業したか——
 
 ## インストール
 
-Releases から notarize 済みの `ActiveLens-<version>-macos-arm64.zip` をダウンロードして
+Releases から notarize 済みの `active-lens-gui-<version>-darwin-arm64.zip` をダウンロードして
 展開し、`ActiveLens.app` を `/Applications` にドラッグします。起動するとメニューバーに
 常駐します（Dock アイコンなし）。
 
