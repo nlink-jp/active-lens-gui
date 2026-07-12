@@ -4,7 +4,17 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.1] - 2026-07-12
+
+### Changed
+
+- **Release archive renamed** to `active-lens-gui-<version>-darwin-arm64.zip`
+  (was `ActiveLens-<version>-macos-arm64.zip`), per `nlink-jp/.github`
+  CONVENTIONS.md §Release Archive Standard. The `.app` inside is still
+  `ActiveLens.app`.
+- Bundles `active-lens` **v0.2.1**.
+
+Packaging-only release; no change to the app's behaviour.
 
 ## [0.2.0] - 2026-07-10
 
