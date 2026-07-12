@@ -24,6 +24,17 @@ NOTARIZE_SCRIPT := scripts/notarize-darwin-app.sh
 # bundle's Resources (sips + iconutil). Missing source → app builds without icon.
 ICON_SRC := assets/AppIcon-1024.png
 
+# Homebrew tap generation (see scripts/release-brew.mk). After `make package`,
+# `make brew` generates this cask from the built darwin-arm64 zip into the local
+# nlink-jp/homebrew-tap checkout. The zip is named after $(NAME); the .app inside
+# is $(APP_NAME).app.
+BREW_KIND      := cask
+BREW_DESC      := Menu-bar work-log app that visualizes operating time
+BREW_NAME      := $(NAME)
+BREW_APP       := $(APP_NAME).app
+BREW_BUNDLE_ID := $(BUNDLE_ID)
+include scripts/release-brew.mk
+
 .PHONY: build build-app package test clean run
 
 ## build: build the release binary
