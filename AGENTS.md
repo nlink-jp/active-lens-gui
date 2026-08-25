@@ -27,6 +27,9 @@ via the Makefile → Info.plist.
 
 ```
 Sources/ActiveLens/
+  Entry.swift          @main; single-instance guard, then ActiveLensApp.main()
+  SingleInstance.swift singleInstanceDecision() — startup duplicate-
+                       instance guard (pure; pids in, decision out)
   App.swift            MenuBarExtra (state icon + the now-session's active time) + Analysis Window
   PopoverView.swift    the now-session (open/paused) + Today total + Record-in-background toggle
   AnalysisView.swift   Swift Charts: calendar work-timeline (day columns) + block hover + work-log list
@@ -64,6 +67,17 @@ Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
   effectively random. `TimelineDay.block(atHours:)` is pure and tested.
 - Chart colors: operating=green, present=blue, away=gray — one palette
   (`ActivityPalette`) shared by popover dots and chart scales.
+- **Notification clicks launch by bundle ID — enforce a single instance.**
+  Clicking a banner makes notificationd open the app via LaunchServices,
+  which resolves `jp.nlink.active-lens-gui` among *all* registered copies
+  (`dist/` dev builds, release-verification extractions, `/Applications`)
+  and may start a different copy than the running one → two menu bar
+  items, double polling. Guarded at two layers:
+  `LSMultipleInstancesProhibited` (Info.plist, stops LaunchServices
+  launches) and a startup check in `Entry.main`
+  (`singleInstanceDecision`, pure + tested) that exits with a stderr note
+  (covers direct exec / `open -n`). Side effect: to run a `dist/` build,
+  quit the installed instance first — a second copy now refuses to start.
 
 ## Status
 

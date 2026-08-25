@@ -4,6 +4,20 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Clicking a notification banner could start a second instance (two menu
+  bar items, double polling): notificationd opens the app via
+  LaunchServices by bundle identifier, and with more than one registered
+  copy of the .app (dev build in `dist/`, `/Applications`) it may launch
+  a different copy than the running one. The app is now single-instance
+  at two layers: `LSMultipleInstancesProhibited` in Info.plist stops
+  LaunchServices launches, and a startup guard exits with a stderr note
+  when another instance is already running (covers direct binary exec
+  and `open -n`)
+
 ## [0.2.1] - 2026-07-12
 
 ### Changed

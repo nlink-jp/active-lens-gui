@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 
-@main
 struct ActiveLensApp: App {
     @StateObject private var model = Self.makeModel()
 

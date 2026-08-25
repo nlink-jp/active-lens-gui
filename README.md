@@ -57,6 +57,10 @@ bundled copy, not an arbitrary one on your PATH. Enabling background recording
 registers that bundled binary as a launchd LaunchAgent, so keep the app where
 you install it from.
 
+The app is single-instance: starting a second copy (for example, a
+notification click resolving to a different copy of the .app) logs to
+stderr and exits, leaving the running instance alone.
+
 ## Install
 
 Download the notarized `active-lens-gui-<version>-darwin-arm64.zip` from Releases,
