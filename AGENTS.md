@@ -14,6 +14,7 @@ architecture).
 make build      # swift build -c release
 make build-app  # assemble + Developer-ID sign dist/ActiveLens.app (bundles the CLI)
 make package    # notarize + staple + zip the release asset
+make verify-release  # gate: .notarized marker + stapler validate (run before upload)
 make test       # swift test
 make run        # swift run (debug)
 ```
