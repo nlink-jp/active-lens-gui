@@ -2,11 +2,26 @@ import XCTest
 @testable import ActiveLens
 
 final class StatusTests: XCTestCase {
-    private func status(loaded: Bool, interval: Int, lastUnix: Int) -> DaemonStatus {
+    private func status(loaded: Bool, interval: Int, lastUnix: Int,
+                        dayStartHour: Int? = nil, dayBoundary: String? = nil) -> DaemonStatus {
         DaemonStatus(
             daemonInstalled: loaded, daemonLoaded: loaded, dbPath: "/x",
             intervalSeconds: interval, thresholdSeconds: 30, maxGapSeconds: interval * 3,
+            dayStartHour: dayStartHour, dayBoundary: dayBoundary,
             lastSampleUnix: lastUnix, lastSampleState: "operating")
+    }
+
+    func testDayBoundaryFieldsAreOptional() {
+        // A bundled CLI older than 0.3.0 reports neither; "not strict" is the
+        // right reading of that silence, not a crash and not a guess.
+        let old = status(loaded: true, interval: 15, lastUnix: 1_000_000)
+        XCTAssertFalse(old.cutsSessionsAtDayBoundary)
+        XCTAssertNil(old.dayStartLabel)
+
+        let strict = status(loaded: true, interval: 15, lastUnix: 1_000_000,
+                            dayStartHour: 5, dayBoundary: "strict")
+        XCTAssertTrue(strict.cutsSessionsAtDayBoundary)
+        XCTAssertEqual(strict.dayStartLabel, "05:00")
     }
 
     func testIsRecordingFreshSample() {

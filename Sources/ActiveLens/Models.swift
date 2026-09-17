@@ -79,6 +79,11 @@ struct DaemonStatus: Codable, Equatable {
     let intervalSeconds: Int
     let thresholdSeconds: Double
     let maxGapSeconds: Int
+    /// The hour a logical day begins at, and what the boundary does to a session
+    /// running through it ("session" / "strict"). Optional: a bundled CLI older
+    /// than 0.3.0 does not report them.
+    let dayStartHour: Int?
+    let dayBoundary: String?
     let lastSampleUnix: Int
     let lastSampleState: String
 
@@ -89,12 +94,25 @@ struct DaemonStatus: Codable, Equatable {
         case intervalSeconds = "interval_seconds"
         case thresholdSeconds = "threshold_seconds"
         case maxGapSeconds = "max_gap_seconds"
+        case dayStartHour = "day_start_hour"
+        case dayBoundary = "day_boundary"
         case lastSampleUnix = "last_sample_unix"
         case lastSampleState = "last_sample_state"
     }
 
     var lastSampleDate: Date? {
         lastSampleUnix > 0 ? Date(timeIntervalSince1970: TimeInterval(lastSampleUnix)) : nil
+    }
+
+    /// Whether the day boundary ends a session that runs through it, so a day is
+    /// credited only its own hours. False for the default rule and for a CLI too
+    /// old to say.
+    var cutsSessionsAtDayBoundary: Bool { dayBoundary == "strict" }
+
+    /// "05:00" for the hour the logical day begins at, when the CLI reports it.
+    var dayStartLabel: String? {
+        guard let h = dayStartHour else { return nil }
+        return String(format: "%02d:00", h)
     }
 
     /// Whether activity is actually being recorded right now — i.e. a sample
@@ -154,12 +172,16 @@ struct TimelineBreak: Codable, Identifiable, Equatable {
 }
 
 /// TimelineSession mirrors one unbroken stretch of work. A session is never split
-/// at midnight, so it may end on the following calendar day.
+/// at midnight, so it may end on the following calendar day. Under the CLI's
+/// `work.day_boundary = "strict"` the logical day boundary does end it, and the
+/// carried flags mark which of its ends is that cut rather than a real one.
 struct TimelineSession: Codable, Identifiable, Equatable {
     let startUnix: Int
     let endUnix: Int
     let start: String
     let end: String
+    let carriedIn: Bool
+    let carriedOut: Bool
     let operatingSeconds: Int
     let presentSeconds: Int
     let activeSeconds: Int
@@ -171,6 +193,8 @@ struct TimelineSession: Codable, Identifiable, Equatable {
         case start, end, breaks
         case startUnix = "start_unix"
         case endUnix = "end_unix"
+        case carriedIn = "carried_in"
+        case carriedOut = "carried_out"
         case operatingSeconds = "operating_seconds"
         case presentSeconds = "present_seconds"
         case activeSeconds = "active_seconds"
@@ -182,6 +206,10 @@ struct TimelineSession: Codable, Identifiable, Equatable {
         endUnix = try c.decode(Int.self, forKey: .endUnix)
         start = try c.decode(String.self, forKey: .start)
         end = try c.decode(String.self, forKey: .end)
+        // Absent from a bundled CLI older than 0.3.0, which never cuts a session
+        // at the boundary — so "not carried" is the right reading of silence.
+        carriedIn = (try? c.decode(Bool.self, forKey: .carriedIn)) ?? false
+        carriedOut = (try? c.decode(Bool.self, forKey: .carriedOut)) ?? false
         operatingSeconds = try c.decode(Int.self, forKey: .operatingSeconds)
         presentSeconds = try c.decode(Int.self, forKey: .presentSeconds)
         activeSeconds = try c.decode(Int.self, forKey: .activeSeconds)
@@ -228,6 +256,11 @@ struct TimelineDay: Codable, Identifiable, Equatable {
     let workEndUnix: Int
     let workStart: String
     let workEnd: String
+    /// carriedIn: workStart is this day's boundary, not a time anyone sat down at
+    /// — work was already under way. carriedOut: work ran past the next boundary
+    /// and continues on the following day's row.
+    let carriedIn: Bool
+    let carriedOut: Bool
     let operatingSeconds: Int
     let presentSeconds: Int
     let activeSeconds: Int
@@ -247,6 +280,8 @@ struct TimelineDay: Codable, Identifiable, Equatable {
         case workEndUnix = "work_end_unix"
         case workStart = "work_start"
         case workEnd = "work_end"
+        case carriedIn = "carried_in"
+        case carriedOut = "carried_out"
         case operatingSeconds = "operating_seconds"
         case presentSeconds = "present_seconds"
         case activeSeconds = "active_seconds"
@@ -264,6 +299,8 @@ struct TimelineDay: Codable, Identifiable, Equatable {
         workEndUnix = try c.decode(Int.self, forKey: .workEndUnix)
         workStart = try c.decode(String.self, forKey: .workStart)
         workEnd = try c.decode(String.self, forKey: .workEnd)
+        carriedIn = (try? c.decode(Bool.self, forKey: .carriedIn)) ?? false
+        carriedOut = (try? c.decode(Bool.self, forKey: .carriedOut)) ?? false
         operatingSeconds = try c.decode(Int.self, forKey: .operatingSeconds)
         presentSeconds = try c.decode(Int.self, forKey: .presentSeconds)
         activeSeconds = try c.decode(Int.self, forKey: .activeSeconds)
@@ -303,6 +340,9 @@ struct TimelineReport: Codable, Equatable {
     let breakThresholdSeconds: Int
     let sessionGapSeconds: Int
     let dayStartHour: Int
+    /// "session" (a session stays on the day it started) or "strict" (the
+    /// boundary cuts it). Absent from a bundled CLI older than 0.3.0.
+    let dayBoundary: String?
     let days: [TimelineDay]
 
     enum CodingKeys: String, CodingKey {
@@ -311,7 +351,14 @@ struct TimelineReport: Codable, Equatable {
         case breakThresholdSeconds = "break_threshold_seconds"
         case sessionGapSeconds = "session_gap_seconds"
         case dayStartHour = "day_start_hour"
+        case dayBoundary = "day_boundary"
     }
+
+    /// The label for the hour a logical day begins at: "05:00".
+    var dayStartLabel: String { String(format: "%02d:00", dayStartHour) }
+
+    /// Whether this payload was derived with the boundary cutting sessions.
+    var cutsSessionsAtDayBoundary: Bool { dayBoundary == "strict" }
 }
 
 // MARK: - Now (the current session)
@@ -327,6 +374,11 @@ struct NowSession: Codable, Equatable {
     let endUnix: Int
     let start: String
     let end: String
+    /// carriedIn: this session begins at the logical day boundary — the work was
+    /// already under way, and the hours before it are on yesterday's log. It is
+    /// why the heading can read "0s" with hands still on the keyboard.
+    let carriedIn: Bool
+    let carriedOut: Bool
     let activeSeconds: Int
     let operatingSeconds: Int
     let presentSeconds: Int
@@ -336,6 +388,8 @@ struct NowSession: Codable, Equatable {
         case open, paused, start, end, breaks
         case startUnix = "start_unix"
         case endUnix = "end_unix"
+        case carriedIn = "carried_in"
+        case carriedOut = "carried_out"
         case activeSeconds = "active_seconds"
         case operatingSeconds = "operating_seconds"
         case presentSeconds = "present_seconds"
@@ -349,6 +403,8 @@ struct NowSession: Codable, Equatable {
         endUnix = try c.decode(Int.self, forKey: .endUnix)
         start = try c.decode(String.self, forKey: .start)
         end = try c.decode(String.self, forKey: .end)
+        carriedIn = (try? c.decode(Bool.self, forKey: .carriedIn)) ?? false
+        carriedOut = (try? c.decode(Bool.self, forKey: .carriedOut)) ?? false
         activeSeconds = try c.decode(Int.self, forKey: .activeSeconds)
         operatingSeconds = try c.decode(Int.self, forKey: .operatingSeconds)
         presentSeconds = try c.decode(Int.self, forKey: .presentSeconds)

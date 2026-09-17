@@ -51,6 +51,19 @@ enum Format {
         return cal.isDate(start, inSameDayAs: end) ? "" : " (+1)"
     }
 
+    /// A note for a day whose work log is bounded by a day-boundary cut rather
+    /// than by the user putting their hands down — nil when both ends are real.
+    /// Without it, a run of days all starting at exactly 05:00 reads as an
+    /// improbably punctual worker rather than as one long stretch, cut.
+    static func carryNote(_ d: TimelineDay) -> String? {
+        switch (d.carriedIn, d.carriedOut) {
+        case (true, true): return "Continues from the previous day and into the next."
+        case (true, false): return "Continues from the previous day: work was already under way at \(d.workStart)."
+        case (false, true): return "Continues into the next day: work ran past \(d.workEnd)."
+        default: return nil
+        }
+    }
+
     /// Local midnight (epoch seconds) for a "yyyy-MM-dd" date string. Cached
     /// formatter keeps the per-segment lookups cheap.
     static func midnightEpoch(_ dateString: String) -> Int {

@@ -69,7 +69,9 @@ struct PopoverView: View {
         HStack(spacing: 6) {
             Text("active").foregroundStyle(.secondary)
             Text("·").foregroundStyle(.tertiary)
-            Text("started \(s.start)")
+            // A carried-in session did not start when the user sat down — the day
+            // turned over mid-work — so it must not claim it did.
+            Text(s.carriedIn ? "since the day began, \(s.start)" : "started \(s.start)")
             // An open session's end is just "the last thing you did", so showing it
             // would read as a finish time. Show it only once the session has closed.
             if !s.open {
@@ -77,6 +79,15 @@ struct PopoverView: View {
             }
         }
         .font(.callout)
+
+        // Only shown when it happened: a heading that restarted mid-work is the
+        // one moment this number needs a sentence of explanation.
+        if s.carriedIn {
+            Text("You were already working when the day turned over at \(s.start). "
+                + "The hours before it are counted on the previous day.")
+                .font(.caption2).foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
 
         Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 4) {
             metricRow("Operating", Format.duration(s.operatingSeconds), .operating)

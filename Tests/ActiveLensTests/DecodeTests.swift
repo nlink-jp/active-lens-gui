@@ -252,4 +252,99 @@ final class DecodeTests: XCTestCase {
         XCTAssertNil(n.currentState)
         XCTAssertEqual(n.day.date, "2026-07-10")
     }
+    // MARK: - Day boundary (CLI ADR 0002)
+
+    /// A `strict` payload: one stretch of work cut at the 05:00 boundary, so the
+    /// second day starts at a cut rather than at someone sitting down.
+    func testDecodeTimelineCarriedAcrossTheDayBoundary() throws {
+        let json = """
+        {
+          "since": "2026-09-12", "until": "2026-09-13", "timezone": "Local",
+          "sample_count": 2, "break_threshold_seconds": 600,
+          "session_gap_seconds": 14400, "day_start_hour": 5, "day_boundary": "strict",
+          "days": [
+            {
+              "date": "2026-09-12", "day_start_unix": 1789000000, "has_work": true,
+              "work_start_unix": 1789020000, "work_end_unix": 1789086400,
+              "work_start": "10:54", "work_end": "05:00",
+              "carried_in": false, "carried_out": true,
+              "operating_seconds": 58000, "present_seconds": 0,
+              "active_seconds": 58000, "span_seconds": 66400,
+              "sessions": [ {
+                "start_unix": 1789020000, "end_unix": 1789086400,
+                "start": "10:54", "end": "05:00",
+                "carried_in": false, "carried_out": true,
+                "operating_seconds": 58000, "present_seconds": 0,
+                "active_seconds": 58000, "breaks": []
+              } ],
+              "segments": [], "blocks": [], "breaks": []
+            },
+            {
+              "date": "2026-09-13", "day_start_unix": 1789086400, "has_work": true,
+              "work_start_unix": 1789086400, "work_end_unix": 1789100000,
+              "work_start": "05:00", "work_end": "08:46",
+              "carried_in": true, "carried_out": false,
+              "operating_seconds": 13600, "present_seconds": 0,
+              "active_seconds": 13600, "span_seconds": 13600,
+              "sessions": [ {
+                "start_unix": 1789086400, "end_unix": 1789100000,
+                "start": "05:00", "end": "08:46",
+                "carried_in": true, "carried_out": false,
+                "operating_seconds": 13600, "present_seconds": 0,
+                "active_seconds": 13600, "breaks": []
+              } ],
+              "segments": [], "blocks": [], "breaks": []
+            }
+          ]
+        }
+        """.data(using: .utf8)!
+        let tl = try JSONDecoder().decode(TimelineReport.self, from: json)
+        XCTAssertTrue(tl.cutsSessionsAtDayBoundary)
+        XCTAssertEqual(tl.dayStartLabel, "05:00")
+
+        XCTAssertTrue(tl.days[0].carriedOut)
+        XCTAssertFalse(tl.days[0].carriedIn)
+        XCTAssertTrue(tl.days[1].carriedIn)
+        XCTAssertTrue(tl.days[1].sessions[0].carriedIn)
+        XCTAssertEqual(Format.carryNote(tl.days[1]),
+                       "Continues from the previous day: work was already under way at 05:00.")
+        XCTAssertEqual(Format.carryNote(tl.days[0]),
+                       "Continues into the next day: work ran past 05:00.")
+    }
+
+    /// The default rule, and any CLI older than 0.3.0: no carried flags at all.
+    func testDecodeTimelineWithoutCarriedFlags() throws {
+        let tl = try JSONDecoder().decode(TimelineReport.self, from: eveningTimelineJSON())
+        XCTAssertNil(tl.dayBoundary)
+        XCTAssertFalse(tl.cutsSessionsAtDayBoundary)
+        XCTAssertFalse(tl.days[0].carriedIn)
+        XCTAssertFalse(tl.days[0].carriedOut)
+        XCTAssertFalse(tl.days[0].sessions[0].carriedIn)
+        XCTAssertNil(Format.carryNote(tl.days[0]))
+    }
+
+    func testDecodeNowCarriedInSession() throws {
+        // 05:30, having worked since the night before: the heading is small on
+        // purpose, and carried_in is what lets the popover say why.
+        let json = """
+        {
+          "state": "operating", "recording": true,
+          "session": {
+            "open": true, "paused": false,
+            "start_unix": 1789086400, "end_unix": 1789088200,
+            "start": "05:00", "end": "05:30",
+            "carried_in": true, "carried_out": false,
+            "active_seconds": 1800, "operating_seconds": 1800, "present_seconds": 0,
+            "breaks": []
+          },
+          "day": { "date": "2026-09-13", "active_seconds": 1800 }
+        }
+        """.data(using: .utf8)!
+        let n = try JSONDecoder().decode(NowReport.self, from: json)
+        XCTAssertEqual(n.session?.carriedIn, true)
+        XCTAssertEqual(n.session?.carriedOut, false)
+        XCTAssertEqual(n.session?.activeSeconds, 1800)
+        XCTAssertEqual(n.day.date, "2026-09-13")
+    }
+
 }

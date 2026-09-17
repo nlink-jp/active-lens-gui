@@ -4,6 +4,27 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-09-17
+
+### Added
+
+- **Shows a day-boundary cut.** With the CLI's `work.day_boundary = "strict"`
+  (active-lens 0.3.0), a session running through the logical day boundary is cut
+  there. The work log now marks a day whose work carried in or out, with a
+  tooltip explaining it, and states the rule in its header; the popover explains
+  a session that began at the boundary rather than when you sat down — which is
+  why the menu-bar heading can restart mid-work. See
+  [ADR 0002](docs/en/adr/0002-day-boundary-marks.md).
+- Decodes `carried_in` / `carried_out` (day, session, now-session),
+  `day_boundary` (timeline), and `day_start_hour` / `day_boundary` (status). All
+  optional: with an older bundled CLI the app reads the absence as the previous
+  behaviour and runs unchanged.
+
+### Changed
+
+- The bundled `active-lens` CLI is 0.3.0. Nothing in the display changes unless
+  you set `work.day_boundary = "strict"` yourself.
+
 ## [0.2.2] - 2026-08-25
 
 ### Fixed
@@ -81,7 +102,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.1...v0.2.2
 [0.2.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/nlink-jp/active-lens-gui/releases/tag/v0.1.0

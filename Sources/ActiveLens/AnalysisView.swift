@@ -292,7 +292,13 @@ struct AnalysisView: View {
     private var logBox: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Work log").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Work log").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    if let tl = model.timeline, tl.cutsSessionsAtDayBoundary {
+                        Text("day starts \(tl.dayStartLabel) · sessions cut at the boundary")
+                            .font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
                 if days.isEmpty {
                     emptyChart
                 } else {
@@ -308,15 +314,37 @@ struct AnalysisView: View {
         }
     }
 
+    /// One work-log row. A day bounded by a boundary cut carries a tooltip
+    /// explaining the cut; a day that began and ended on real activity gets no
+    /// tooltip at all, rather than an empty one.
     @ViewBuilder
     private func logRow(_ d: TimelineDay) -> some View {
+        if let note = Format.carryNote(d) {
+            logRowContent(d).help(note)
+        } else {
+            logRowContent(d)
+        }
+    }
+
+    @ViewBuilder
+    private func logRowContent(_ d: TimelineDay) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Text(Format.shortDay(d.date)).font(.callout.monospacedDigit()).frame(width: 52, alignment: .leading)
             if d.hasWork {
+                // A day bounded by a boundary cut is marked, so an 05:00 start is
+                // never read as someone sitting down at 05:00. The note explains it.
+                if d.carriedIn {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
                 // A session that ran past midnight ends on the next calendar day;
                 // "22:00 → 01:00" would otherwise read as a 21-hour backwards span.
                 Text("\(d.workStart) → \(d.workEnd)\(Format.nextDayMark(d))")
                     .font(.callout.monospacedDigit())
+                if d.carriedOut {
+                    Image(systemName: "arrow.right.to.line")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
                 Text("active \(Format.duration(d.activeSeconds))")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()

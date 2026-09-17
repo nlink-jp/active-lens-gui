@@ -41,6 +41,22 @@ The CLI owns all of this. See
 [its README](../active-lens/README.md#sessions-and-logical-days) for the session
 gap and the logical day boundary, both configurable.
 
+### When your day belongs to your employer
+
+Setting `work.day_boundary = "strict"` in the CLI's `config.toml` makes the day
+boundary end a session instead of letting it run through — the rule to use where
+the working day starts at a time someone else set, and hours past it must count
+against the new day.
+
+The app then reads that way too. The menu-bar heading restarts at the boundary,
+and the surfaces showing a boundary time say that it is one: the work log marks a
+day whose work carried in or out, with a tooltip, and the popover explains a
+session that began because the day turned over rather than because you sat down.
+See [ADR 0002](docs/en/adr/0002-day-boundary-marks.md).
+
+The setting reaches the app only through the CLI it bundles, so it takes effect
+from the release that ships a CLI supporting it (0.3.0 and later).
+
 ## How it fits together
 
 ```

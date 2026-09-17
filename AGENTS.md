@@ -59,6 +59,13 @@ Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
   reconstruct "today" by looking a date up in the timeline. Do not compute date
   ranges either — `timeline --days N` resolves them against the CLI's logical day
   boundary. Both were removed for reimplementing engine arithmetic.
+- **The engine decides where a day is cut; this app only says so.** With the
+  CLI's `work.day_boundary = "strict"` a session is ended at the logical day
+  boundary, which makes `work_start` the boundary itself and restarts the
+  menu-bar heading mid-work. Decode `carried_in` / `carried_out` and mark those
+  surfaces; never infer a cut from timestamps. Every field added for this is
+  optional so an older bundled CLI still decodes — absence means the old rule.
+  See `docs/en/adr/0002-day-boundary-marks.md`.
 - **Chart offsets are hours from `day_start_unix`, not midnight**, and the y axis
   is deliberately not clamped to 24: a session filed under the day it began may
   run past that day's own 24 hours. Axis labels map offsets back to wall clock via
@@ -82,7 +89,7 @@ Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
 
 ## Status
 
-Phase 2 complete: `swift build` / `swift test` (25 tests) green; `.app` builds,
+Phase 2 complete: `swift build` / `swift test` green; `.app` builds,
 Developer-ID signs, spctl-accepts, and was launch-verified end-to-end (the signed
 app invoked the bundled CLI and created the data store under Hardened Runtime).
 No app icon yet (`assets/AppIcon-1024.png` absent — builds without one).
