@@ -15,7 +15,8 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
   a session that began at the boundary rather than when you sat down — which is
   why the menu-bar heading can restart mid-work. See
   [ADR 0002](docs/en/adr/0002-day-boundary-marks.md).
-- Decodes `carried_in` / `carried_out` (day, session, now-session),
+- Decodes `carried_in` / `carried_out` (day, timeline session; `carried_in` only
+  on the now-session, which the boundary never cuts),
   `day_boundary` (timeline), and `day_start_hour` / `day_boundary` (status). All
   optional: with an older bundled CLI the app reads the absence as the previous
   behaviour and runs unchanged.

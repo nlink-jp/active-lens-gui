@@ -51,11 +51,19 @@ guessed at.
   default needs no explanation.
 - Popover: a carried-in session reads "since the day began, 05:00" instead of
   "started 05:00", and gains one sentence explaining where the earlier hours
-  went. Shown only when it happened.
+  went. Shown only when it happened. There is no carried-out counterpart on the
+  now-session: a session the boundary cut is never the current one, so the CLI
+  does not publish the flag there.
+- Marks sit in fixed-width slots present on every row, and an empty slot draws
+  its symbol invisibly rather than a blank box — otherwise the monospaced times
+  step sideways and the rows sit at uneven intervals. Both were found by
+  rendering the rows offscreen, not by reading the code.
 
-**The chart is unchanged.** Under `strict` a column can still reach exactly 24h
-but never exceeds it, so the y-domain from ADR 0001 (which had to allow more)
-already covers it. Nothing in the drawing code needs to know the mode.
+**The chart is unchanged.** Under `strict` a column reaches the length of its
+logical day — 24h, or 23/25 across a daylight-saving change — and no more, which
+the y-domain from ADR 0001 (which had to allow a session outliving its day)
+already covers: it is derived from the day's own work start and end, not clamped.
+Nothing in the drawing code needs to know the mode.
 
 ## 3. Consequences
 

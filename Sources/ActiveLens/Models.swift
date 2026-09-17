@@ -374,11 +374,12 @@ struct NowSession: Codable, Equatable {
     let endUnix: Int
     let start: String
     let end: String
-    /// carriedIn: this session begins at the logical day boundary — the work was
-    /// already under way, and the hours before it are on yesterday's log. It is
-    /// why the heading can read "0s" with hands still on the keyboard.
+    /// This session begins at the logical day boundary — the work was already
+    /// under way, and the hours before it are on yesterday's log. It is why the
+    /// heading can read "0s" with hands still on the keyboard. There is no
+    /// carried-out counterpart: a session the boundary cut is never the current
+    /// one, so the CLI does not publish one.
     let carriedIn: Bool
-    let carriedOut: Bool
     let activeSeconds: Int
     let operatingSeconds: Int
     let presentSeconds: Int
@@ -389,7 +390,6 @@ struct NowSession: Codable, Equatable {
         case startUnix = "start_unix"
         case endUnix = "end_unix"
         case carriedIn = "carried_in"
-        case carriedOut = "carried_out"
         case activeSeconds = "active_seconds"
         case operatingSeconds = "operating_seconds"
         case presentSeconds = "present_seconds"
@@ -404,7 +404,6 @@ struct NowSession: Codable, Equatable {
         start = try c.decode(String.self, forKey: .start)
         end = try c.decode(String.self, forKey: .end)
         carriedIn = (try? c.decode(Bool.self, forKey: .carriedIn)) ?? false
-        carriedOut = (try? c.decode(Bool.self, forKey: .carriedOut)) ?? false
         activeSeconds = try c.decode(Int.self, forKey: .activeSeconds)
         operatingSeconds = try c.decode(Int.self, forKey: .operatingSeconds)
         presentSeconds = try c.decode(Int.self, forKey: .presentSeconds)

@@ -333,7 +333,7 @@ final class DecodeTests: XCTestCase {
             "open": true, "paused": false,
             "start_unix": 1789086400, "end_unix": 1789088200,
             "start": "05:00", "end": "05:30",
-            "carried_in": true, "carried_out": false,
+            "carried_in": true,
             "active_seconds": 1800, "operating_seconds": 1800, "present_seconds": 0,
             "breaks": []
           },
@@ -342,7 +342,6 @@ final class DecodeTests: XCTestCase {
         """.data(using: .utf8)!
         let n = try JSONDecoder().decode(NowReport.self, from: json)
         XCTAssertEqual(n.session?.carriedIn, true)
-        XCTAssertEqual(n.session?.carriedOut, false)
         XCTAssertEqual(n.session?.activeSeconds, 1800)
         XCTAssertEqual(n.day.date, "2026-09-13")
     }

@@ -52,4 +52,31 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(ActivityModel.periodDays("nonsense"), 7)
         XCTAssertEqual(ActivityModel.periodDays("0d"), 7)
     }
+    /// carryNote must cover the both-ends case too: a day entirely inside one
+    /// long stretch of work is carried in *and* out, and it is reachable — a full
+    /// 24h logical day in the middle of a multi-day run produces exactly that.
+    func testCarryNoteCoversEveryCase() throws {
+        func day(_ carriedIn: Bool, _ carriedOut: Bool) throws -> TimelineDay {
+            let json = """
+            {
+              "date": "2026-09-13", "day_start_unix": 1789151600, "has_work": true,
+              "work_start_unix": 1789151600, "work_end_unix": 1789238000,
+              "work_start": "05:00", "work_end": "05:00",
+              "carried_in": \(carriedIn), "carried_out": \(carriedOut),
+              "operating_seconds": 86400, "present_seconds": 0,
+              "active_seconds": 86400, "span_seconds": 86400,
+              "sessions": [], "segments": [], "blocks": [], "breaks": []
+            }
+            """.data(using: .utf8)!
+            return try JSONDecoder().decode(TimelineDay.self, from: json)
+        }
+        XCTAssertEqual(Format.carryNote(try day(true, true)),
+                       "Continues from the previous day and into the next.")
+        XCTAssertEqual(Format.carryNote(try day(true, false)),
+                       "Continues from the previous day: work was already under way at 05:00.")
+        XCTAssertEqual(Format.carryNote(try day(false, true)),
+                       "Continues into the next day: work ran past 05:00.")
+        XCTAssertNil(Format.carryNote(try day(false, false)))
+    }
+
 }

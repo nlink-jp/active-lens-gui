@@ -332,19 +332,16 @@ struct AnalysisView: View {
             Text(Format.shortDay(d.date)).font(.callout.monospacedDigit()).frame(width: 52, alignment: .leading)
             if d.hasWork {
                 // A day bounded by a boundary cut is marked, so an 05:00 start is
-                // never read as someone sitting down at 05:00. The note explains it.
-                if d.carriedIn {
-                    Image(systemName: "arrow.turn.down.right")
-                        .font(.caption2).foregroundStyle(.tertiary)
-                }
+                // never read as someone sitting down at 05:00; the row's tooltip
+                // explains it. The marks sit in fixed-width slots that are present
+                // on every row, or the monospaced times would step left and right
+                // between carried and ordinary days.
+                markSlot(d.carriedIn ? "arrow.turn.down.right" : nil)
                 // A session that ran past midnight ends on the next calendar day;
                 // "22:00 → 01:00" would otherwise read as a 21-hour backwards span.
                 Text("\(d.workStart) → \(d.workEnd)\(Format.nextDayMark(d))")
                     .font(.callout.monospacedDigit())
-                if d.carriedOut {
-                    Image(systemName: "arrow.right.to.line")
-                        .font(.caption2).foregroundStyle(.tertiary)
-                }
+                markSlot(d.carriedOut ? "arrow.right.to.line" : nil)
                 Text("active \(Format.duration(d.activeSeconds))")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()
@@ -363,6 +360,20 @@ struct AnalysisView: View {
             }
         }
         .padding(.vertical, 1)
+    }
+
+    /// A fixed-width slot for a carry mark, empty when there is nothing to mark.
+    /// Its width is reserved on every row so the time column never shifts.
+    private func markSlot(_ symbol: String?) -> some View {
+        // An empty slot draws the same symbol invisibly rather than a blank box:
+        // it keeps the row's height and text baseline identical to a marked row,
+        // which a Color.clear placeholder does not (the rows sat at uneven
+        // intervals until this was rendered offscreen and looked at).
+        Image(systemName: symbol ?? "arrow.turn.down.right")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .opacity(symbol == nil ? 0 : 1)
+            .frame(width: 12)
     }
 
     private var emptyChart: some View {
