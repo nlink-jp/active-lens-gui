@@ -43,7 +43,8 @@ include scripts/release-brew.mk
 # built without this renders with the previous design — square window corners.
 # Passing -platform_version explicitly restores it (measured: sdk 27.0).
 # MACOS_MIN is read from Package.swift so there is one deployment target, not two.
-MACOS_MIN := $(shell sed -n 's/.*\.macOS(\.v\([0-9][0-9]*\)).*/\1.0/p' Package.swift)
+MACOS_MIN := $(shell sed -n -e 's/.*\.macOS(\.v\([0-9][0-9]*\)).*/\1.0/p' \
+                            -e 's/.*\.macOS("\([0-9][0-9.]*\)").*/\1/p' Package.swift | head -1)
 MACOS_SDK := $(shell xcrun --sdk macosx --show-sdk-version)
 SDK_LINK_FLAGS := -Xlinker -platform_version -Xlinker macos -Xlinker $(MACOS_MIN) -Xlinker $(MACOS_SDK)
 
