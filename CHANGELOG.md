@@ -4,6 +4,20 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-09-17
+
+### Fixed
+
+- **The app rendered with the previous generation of window chrome** (square
+  corners). macOS reads the SDK an app was linked against from
+  `LC_BUILD_VERSION` to decide which design to draw, and since the Xcode 27 /
+  Swift 6.4 toolchain `swift build` stamps that field with the deployment target
+  instead of the SDK actually used — v0.3.0 shipped recording `sdk 14.0` where
+  v0.2.2 records `sdk 26.5`. The release build now passes `-platform_version`
+  explicitly, taking the deployment target from `Package.swift` so there is only
+  one of it, and `make verify-release` refuses to release a bundle whose linked
+  SDK is not the current one. Nothing else changed: same sources as v0.3.0.
+
 ## [0.3.0] - 2026-09-17
 
 ### Added
@@ -103,7 +117,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.1...v0.2.2
 [0.2.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.1.0...v0.2.0
