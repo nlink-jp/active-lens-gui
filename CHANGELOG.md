@@ -4,6 +4,17 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **The bundled-CLI check compares exactly, not as a substring.** `CLI_VERSION`
+  was matched with `grep -F`, so a development build of the pinned version
+  (`v0.3.1-3-g<sha>-dirty` against `v0.3.1`) passed, a pin that was not a release
+  tag passed, and an empty pin passed everything — `grep -F ""` matches any
+  output. The gate now requires the CLI to be present, the pin to be a release tag,
+  and the version the binary reports to equal it.
+
 ## [0.3.2] - 2026-09-21
 
 ### Changed
