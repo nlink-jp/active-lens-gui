@@ -10,7 +10,12 @@ APP_BUNDLE  := $(DIST_DIR)/$(APP_NAME).app
 # Contents/Resources so the .app is self-contained. Override CLI_BIN to point at
 # a freshly built binary; if it's missing, the app falls back to finding the CLI
 # on PATH / via $ACTIVE_LENS_BIN at runtime (DEBUG only).
-CLI_BIN ?= ../active-lens/dist/active-lens
+# The release binary first: active-lens's `make package` leaves only
+# dist/active-lens-darwin-arm64, while `make build` leaves dist/active-lens. The
+# single default used to name the second, so building this app right after a
+# CLI release found nothing, warned, and produced an .app with no CLI inside —
+# which only CLI_VERSION's check in verify-release stopped (v0.3.2).
+CLI_BIN ?= $(firstword $(wildcard ../active-lens/dist/active-lens-darwin-arm64 ../active-lens/dist/active-lens))
 
 # The CLI version this app must ship. The app's behaviour *is* the CLI's — every
 # session and figure it shows comes from the bundled binary — so a bundle built
