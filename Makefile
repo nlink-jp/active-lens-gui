@@ -12,6 +12,15 @@ APP_BUNDLE  := $(DIST_DIR)/$(APP_NAME).app
 # on PATH / via $ACTIVE_LENS_BIN at runtime (DEBUG only).
 CLI_BIN ?= ../active-lens/dist/active-lens
 
+# The CLI version this app must ship. The app's behaviour *is* the CLI's — every
+# session and figure it shows comes from the bundled binary — so a bundle built
+# against a stale binary ships stale behaviour under a fresh version number. A
+# release .app resolves its bundled copy first and ignores $ACTIVE_LENS_BIN
+# (CLIRunner.findBinary), so a GUI user cannot pick up a CLI fix any other way.
+# verify-release refuses a bundle whose binary does not report this version.
+# Bump it in the same commit that bundles a newer CLI.
+CLI_VERSION ?= v0.3.1
+
 # macOS Developer ID signing / notarization (see nlink-jp/.github CONVENTIONS.md
 # §Code Signing → GUI apps). Pure SwiftUI/AppKit needs no JIT entitlements —
 # Hardened Runtime alone suffices. --deep also signs the bundled CLI binary.
@@ -101,7 +110,12 @@ verify-release:
 			echo "verify-release: FAIL — linked SDK is $$sdk, expected $(MACOS_SDK)."; \
 			echo "  macOS draws an app linked against an old SDK with the previous window chrome."; \
 			exit 1; }
-	@echo "verify-release: OK ($(VERSION) — marker present, ticket stapled, linked against SDK $(MACOS_SDK))"
+	@out=$$("$(APP_BUNDLE)/Contents/Resources/active-lens" --version 2>/dev/null | head -1); \
+		printf '%s\n' "$$out" | grep -qF "$(CLI_VERSION)" || { \
+			echo "verify-release: FAIL — the bundled CLI reports \"$$out\", not $(CLI_VERSION)."; \
+			echo "  The app's behaviour is the CLI's; rebuild with CLI_BIN pointing at a $(CLI_VERSION) build."; \
+			exit 1; }
+	@echo "verify-release: OK ($(VERSION) — marker present, ticket stapled, linked against SDK $(MACOS_SDK), bundled CLI $(CLI_VERSION))"
 
 ## test: run tests
 test:

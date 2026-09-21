@@ -4,6 +4,28 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Bundled CLI updated to active-lens v0.3.1**, which fixes sessions being
+  reported a whole day late on a Mac kept awake for more than two days. The
+  read that derives sessions started a fixed 48 hours before the window, which
+  cuts a chain of day-boundary sessions in the wrong place; it now widens until
+  it reaches a real break. The app shows what the bundled CLI derives, and a
+  release build resolves its bundled copy first, so this build is the only way
+  the fix reaches the app.
+
+### Fixed
+
+- **`make verify-release` now checks which CLI is inside the bundle.** It
+  verified the notarization marker, the stapled ticket, the release zip and the
+  linked SDK, but not the one thing that decides what the app shows: nothing
+  compared `Contents/Resources/active-lens --version` against the CLI version
+  the release claims to ship, so a bundle built against a stale binary passed
+  every gate. `CLI_VERSION` in the Makefile now states it and the gate enforces
+  it.
+
 ## [0.3.1] - 2026-09-17
 
 ### Fixed
