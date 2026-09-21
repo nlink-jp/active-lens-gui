@@ -4,7 +4,7 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.2] - 2026-09-21
 
 ### Changed
 
