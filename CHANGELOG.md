@@ -8,6 +8,9 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ### Fixed
 
+- The release zip no longer carries AppleDouble (`._*`) entries: the app is
+  zipped with `ditto --norsrc --noextattr`, so its signature survives unpacking
+  with `unzip`. `make verify-release` refuses a zip that carries them.
 - **The bundled-CLI check compares exactly, not as a substring.** `CLI_VERSION`
   was matched with `grep -F`, so a development build of the pinned version
   (`v0.3.1-3-g<sha>-dirty` against `v0.3.1`) passed, a pin that was not a release
