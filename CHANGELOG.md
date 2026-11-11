@@ -6,6 +6,24 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-11
+
+### Changed
+
+- **Bundles `active-lens` v0.5.0: a touch between two absences is not work.**
+  Activity of at most two minutes with an away of ten minutes or more on both
+  sides is counted as away. Thirty seconds at the keyboard three hours after you
+  left used to turn those hours into a break and move the end of the session to
+  that touch; it no longer does. **The figures change, history included**: on the
+  record the engine change was designed against, there are fewer breaks (566 →
+  511), two fewer sessions, and about 72 minutes less active time over 125 days.
+  The menu bar shows a session resumed by such a touch and withdraws it once you
+  have been away ten minutes. Set `work.brief_visit_minutes = 0` in the CLI's
+  config for the previous numbers. See the engine's
+  [ADR 0004](https://github.com/nlink-jp/active-lens/blob/main/docs/en/adr/0004-brief-visit.md).
+- A misspelt key in the CLI's config is now an error shown in the popover,
+  rather than a setting silently ignored.
+
 ### Fixed
 
 - When the background recorder's state cannot be read, the line under the
@@ -203,7 +221,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.1...v0.3.2

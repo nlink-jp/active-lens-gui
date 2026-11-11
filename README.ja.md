@@ -28,6 +28,9 @@ Mac の**勤務ログ**——いつ始業し、休憩し、終業したか——
 （CLI の設定 `work.idle_before_away_minutes`、`0` で無効）、メニューバーの実働時間は、
 席を立って 1 分ほどたつと最大その分だけ戻ります。
 
+不在の途中で少し触れただけ（前後を 10 分以上の離席に挟まれた 2 分以下の活動）も、作業
+には数えません（`work.brief_visit_minutes`、`0` で無効）。
+
 > **対応環境:** macOS 14+ / Apple Silicon。Developer ID 署名 + notarize 済み。
 
 ## 「日」ではなく「セッション」

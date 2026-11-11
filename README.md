@@ -30,6 +30,10 @@ decides this (`work.idle_before_away_minutes` in the CLI's config; `0` turns it
 off), so the active time in the menu bar steps back by up to that long a minute
 after you leave.
 
+A touch in the middle of an absence — two minutes or less at the machine with
+ten minutes or more away on both sides — is not counted as work either
+(`work.brief_visit_minutes`; `0` turns it off).
+
 > **Platform:** macOS 14+ on Apple Silicon. Developer ID signed + notarized.
 
 ## Sessions, not days
