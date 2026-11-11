@@ -6,6 +6,8 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-11
+
 ### Changed
 
 - **The analysis timeline paints each block as a gradient of its states, not
@@ -171,7 +173,9 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.2...v0.4.0
+[0.3.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.2.1...v0.2.2
