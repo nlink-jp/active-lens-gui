@@ -39,7 +39,7 @@ Sources/ActiveLens/
   Models.swift         Codable mirrors of the CLI JSON (Timeline/Now/DaemonStatus/…)
   Formatting.swift     PURE duration/axis formatting + the state color palette
   Shading.swift        PURE state shares per time slice + the block gradient
-Tests/ActiveLensTests/ Format, binary resolution, decode, status/recording
+Tests/ActiveLensTests/ Format, shading, binary resolution, decode, status/recording
 Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
 ```
 

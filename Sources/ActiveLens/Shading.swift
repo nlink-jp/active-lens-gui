@@ -50,8 +50,8 @@ enum Shading {
     }
 
     /// Gradient stop positions (0…1) for `count` slices: one at each slice's
-    /// centre, with the first and last held out to the edges so a block does
-    /// not fade at its ends.
+    /// centre. `ActivityPalette.gradient` adds the stops at 0 and 1 that hold
+    /// the first and last colour out to the block's edges.
     static func stopLocations(count: Int) -> [Double] {
         guard count > 0 else { return [] }
         return (0..<count).map { (Double($0) + 0.5) / Double(count) }

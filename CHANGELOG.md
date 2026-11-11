@@ -26,9 +26,6 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 - Day labels are actually thinned on long periods. Charts marks every category
   of a string axis whatever `values:` is given, so 30 and 90 days were labeled on
   every column.
-
-### Fixed
-
 - The release zip no longer carries AppleDouble (`._*`) entries: the app is
   zipped with `ditto --norsrc --noextattr`, so its signature survives unpacking
   with `unzip`. `make verify-release` refuses a zip that carries them.
