@@ -13,6 +13,7 @@ struct AnalysisView: View {
     @State private var blockPoints: [BlockPoint] = []
     @Environment(\.self) private var environment
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
 
     private var days: [TimelineDay] { model.timeline?.days ?? [] }
 
@@ -55,6 +56,9 @@ struct AnalysisView: View {
         .onChange(of: model.period) { _, _ in model.loadAnalysis() }
         .onChange(of: model.timeline, initial: true) { _, _ in blockPoints = makeBlockPoints() }
         .onChange(of: colorScheme) { _, _ in blockPoints = makeBlockPoints() }
+        // Increase Contrast resolves the state colours differently too; without
+        // this the cached marks kept the old colours while the legend redrew.
+        .onChange(of: contrast) { _, _ in blockPoints = makeBlockPoints() }
         .onAppear { model.loadAnalysis() }
     }
 

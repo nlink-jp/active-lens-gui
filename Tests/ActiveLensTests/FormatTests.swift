@@ -97,4 +97,15 @@ final class FormatTests: XCTestCase {
         XCTAssertFalse(out.contains("d88"))
     }
 
+    func testThinnedNeverLabelsTwoAdjacentColumns() {
+        // 14 keys, step 2: the forced last label (d13) sat beside d12.
+        for n in 13...100 {
+            let keys = (0..<n).map { "d\($0)" }
+            let shown = Format.thinned(keys, max: 12).compactMap { keys.firstIndex(of: $0) }
+            XCTAssertEqual(shown.last, n - 1, "n=\(n)")
+            for (a, b) in zip(shown, shown.dropFirst()) {
+                XCTAssertGreaterThan(b - a, 1, "n=\(n): columns \(a) and \(b) are adjacent")
+            }
+        }
+    }
 }

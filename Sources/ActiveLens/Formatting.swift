@@ -64,8 +64,9 @@ enum Format {
         let step = Int(ceil(Double(keys.count) / Double(max)))
         var out = stride(from: 0, to: keys.count, by: step).map { keys[$0] }
         if let last = keys.last, out.last != last {
-            // Drop a neighbour that would collide with the forced last label.
-            if (keys.count - 1) % step < (step + 1) / 2 { out.removeLast() }
+            // Drop a neighbour that would collide with the forced last label:
+            // one in the very next column always does, whatever the step.
+            if (keys.count - 1) % step < Swift.max(2, (step + 1) / 2) { out.removeLast() }
             out.append(last)
         }
         return out

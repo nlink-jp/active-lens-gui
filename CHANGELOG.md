@@ -6,6 +6,16 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The timeline's colours follow **Increase Contrast** when it is toggled with
+  the analysis window open. The chart's marks are cached and were rebuilt only
+  on a light/dark change, so they kept the old colours while the legend redrew.
+- Day labels never land on two adjacent columns. With the labels thinned at a
+  step of two, the forced label for the newest day sat right beside the one
+  before it (reachable only with a period of 14 to 24 days, which the app does
+  not offer today).
+
 ## [0.5.0] - 2026-11-11
 
 ### Changed
