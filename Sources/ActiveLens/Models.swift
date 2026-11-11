@@ -86,6 +86,9 @@ struct DaemonStatus: Codable, Equatable {
     let dayBoundary: String?
     let lastSampleUnix: Int
     let lastSampleState: String
+    /// Set when the CLI could not determine the daemon's state. `daemonLoaded`
+    /// is then unknown, not false. Optional: a CLI older than 0.5.0 never says.
+    var daemonStatusError: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case daemonInstalled = "daemon_installed"
@@ -98,6 +101,22 @@ struct DaemonStatus: Codable, Equatable {
         case dayBoundary = "day_boundary"
         case lastSampleUnix = "last_sample_unix"
         case lastSampleState = "last_sample_state"
+        case daemonStatusError = "daemon_status_error"
+    }
+
+    /// The line under the recording switch. Pure. When the daemon's state could
+    /// not be read it says so rather than "Not recording (enable…)", which would
+    /// invite switching on a recorder that may already be running. The switch
+    /// itself stays usable: trying is how the state gets resolved.
+    func recordingLabel(now: Date = Date()) -> String {
+        if isRecording(now: now) {
+            return daemonLoaded ? "Recording — starts at login" : "Recording"
+        }
+        if let daemonStatusError, !daemonStatusError.isEmpty {
+            return "Couldn't check the background recorder"
+        }
+        if daemonLoaded { return "Enabled, waiting for first sample…" }
+        return "Not recording (enable to track usage)"
     }
 
     var lastSampleDate: Date? {

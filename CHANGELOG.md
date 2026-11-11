@@ -8,6 +8,10 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ### Fixed
 
+- When the background recorder's state cannot be read, the line under the
+  recording switch says so, instead of "Not recording (enable to track usage)" —
+  which invited switching on a recorder that may already be running. The switch
+  stays usable.
 - The timeline's colours follow **Increase Contrast** when it is toggled with
   the analysis window open. The chart's marks are cached and were rebuilt only
   on a light/dark change, so they kept the old colours while the legend redrew.

@@ -162,11 +162,7 @@ struct PopoverView: View {
 
     private var recordingLabel: String {
         guard let s = model.status else { return "status unknown" }
-        if s.isRecording() {
-            return s.daemonLoaded ? "Recording — starts at login" : "Recording"
-        }
-        if s.daemonLoaded { return "Enabled, waiting for first sample…" }
-        return "Not recording (enable to track usage)"
+        return s.recordingLabel()
     }
 
     @ViewBuilder

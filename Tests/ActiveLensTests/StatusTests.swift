@@ -61,4 +61,29 @@ final class StatusTests: XCTestCase {
         XCTAssertTrue(CLIError.summarize(exitCode: 1, crashed: false, stderr: "permission denied").contains("denied"))
         XCTAssertTrue(CLIError.summarize(exitCode: 2, crashed: false, stderr: "boom").contains("boom"))
     }
+
+    func testRecordingLabelSaysWhenTheDaemonStateIsUnknown() throws {
+        let now = Date(timeIntervalSince1970: 2_000_000)
+        var unknown = status(loaded: false, interval: 15, lastUnix: 1_000_000)
+        unknown.daemonStatusError = "launchctl: timed out"
+        XCTAssertEqual(unknown.recordingLabel(now: now), "Couldn't check the background recorder")
+
+        // Samples still arriving outrank the failed check: it is recording.
+        var live = status(loaded: false, interval: 15, lastUnix: 2_000_000 - 10)
+        live.daemonStatusError = "launchctl: timed out"
+        XCTAssertEqual(live.recordingLabel(now: now), "Recording")
+
+        let off = status(loaded: false, interval: 15, lastUnix: 1_000_000)
+        XCTAssertEqual(off.recordingLabel(now: now), "Not recording (enable to track usage)")
+        let waiting = status(loaded: true, interval: 15, lastUnix: 1_000_000)
+        XCTAssertEqual(waiting.recordingLabel(now: now), "Enabled, waiting for first sample…")
+
+        // The field is optional on the wire: an older CLI omits it.
+        let json = """
+        {"daemon_installed": true, "daemon_loaded": false, "db_path": "/x", "interval_seconds": 15,
+         "threshold_seconds": 30, "max_gap_seconds": 45, "last_sample_unix": 0, "last_sample_state": "",
+         "daemon_status_error": "launchctl: timed out"}
+        """.data(using: .utf8)!
+        XCTAssertEqual(try JSONDecoder().decode(DaemonStatus.self, from: json).daemonStatusError, "launchctl: timed out")
+    }
 }
