@@ -8,6 +8,11 @@ import SwiftUI
 struct AnalysisView: View {
     @EnvironmentObject var model: ActivityModel
     @State private var hover: HoverInfo?
+    /// The chart's marks, rebuilt only when the data or the appearance changes —
+    /// not on every pointer move, which re-evaluates the body.
+    @State private var blockPoints: [BlockPoint] = []
+    @Environment(\.self) private var environment
+    @Environment(\.colorScheme) private var colorScheme
 
     private var days: [TimelineDay] { model.timeline?.days ?? [] }
 
@@ -18,9 +23,12 @@ struct AnalysisView: View {
     var body: some View {
         VStack(spacing: 14) {
             header
+            // The chart takes whatever height the window has; the log is a
+            // scrolling list, so it is the one held to a fixed height.
             timelineBox
-            logBox
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            logBox
+                .frame(height: 196)
 
             if let err = model.lastError {
                 Text(err).font(.caption).foregroundStyle(.orange).lineLimit(3)
@@ -45,6 +53,8 @@ struct AnalysisView: View {
             }
         }
         .onChange(of: model.period) { _, _ in model.loadAnalysis() }
+        .onChange(of: model.timeline, initial: true) { _, _ in blockPoints = makeBlockPoints() }
+        .onChange(of: colorScheme) { _, _ in blockPoints = makeBlockPoints() }
         .onAppear { model.loadAnalysis() }
     }
 
@@ -77,48 +87,47 @@ struct AnalysisView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("When you were at the machine")
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                // Every period fits the window's width — the columns narrow
+                // instead of scrolling, so the time axis and the legend never
+                // leave the screen and 90 days read at a glance.
                 if days.isEmpty {
-                    emptyChart.frame(height: 260)
+                    emptyChart.frame(maxHeight: .infinity)
                 } else {
-                    GeometryReader { geo in
-                        let needed = CGFloat(days.count) * 46
-                        if needed > geo.size.width {
-                            // Only scroll (and show the indicator) when the columns
-                            // actually overflow — otherwise it left a scrollbar ghost.
-                            ScrollView(.horizontal, showsIndicators: true) {
-                                timelineChart.frame(width: needed, height: geo.size.height)
-                            }
-                        } else {
-                            timelineChart.frame(width: geo.size.width, height: geo.size.height)
-                        }
-                    }
-                    .frame(height: 260)
+                    timelineChart.frame(minHeight: 160, maxHeight: .infinity)
+                    legend
                 }
             }
         }
     }
 
     private var timelineChart: some View {
-        Chart(segmentPoints) { p in
+        Chart(blockPoints) { p in
             BarMark(
                 x: .value("Day", p.date),
                 yStart: .value("Start", p.startHour),
                 yEnd: .value("End", p.endHour),
-                width: .ratio(0.7)
+                width: .ratio(0.72)
             )
-            .foregroundStyle(by: .value("State", p.stateLabel))
+            .cornerRadius(1.5) // the default radius turns a narrow column into beads
+            .foregroundStyle(p.style)
         }
-        .chartForegroundStyleScale(domain: ActivityPalette.chartDomain, range: ActivityPalette.chartRange)
         .chartXScale(domain: days.map(\.date)) // oldest left, newest right
         // Inverted y (descending domain) puts the start of the day at the top, like
         // a calendar. The ±0.4h padding keeps the top/bottom hour labels off the
         // edge so they aren't clipped.
         .chartYScale(domain: [hoursBounds.hi + 0.4, hoursBounds.lo - 0.4])
         .chartXAxis {
-            AxisMarks(values: xTicks) { value in
-                AxisTick()
-                if let s = value.as(String.self) {
-                    AxisValueLabel(Format.shortDay(s), orientation: .vertical)
+            // The thinned labels are wider than a narrow day column, so each is
+            // sized to its text rather than truncated to the column.
+            // Filtered inside the closure: for a string axis Charts marks every
+            // category whatever `values:` says, which is how 90 days came out as
+            // 90 overlapping labels.
+            AxisMarks { value in
+                if let s = value.as(String.self), xTicks.contains(s) {
+                    AxisTick()
+                    AxisValueLabel(collisionResolution: .disabled) {
+                        Text(Format.shortDay(s)).lineLimit(1).frame(width: 44)
+                    }
                 }
             }
         }
@@ -130,7 +139,9 @@ struct AnalysisView: View {
                 }
             }
         }
-        .chartLegend(position: .bottom, spacing: 8)
+        // Room for the newest day's label, which is wider than its column and
+        // would otherwise be cut off at the chart's right edge.
+        .padding(.trailing, 16)
         .chartOverlay { proxy in
             GeometryReader { geo in
                 Rectangle().fill(.clear).contentShape(Rectangle())
@@ -152,6 +163,20 @@ struct AnalysisView: View {
         }
     }
 
+    /// The three states the gradient blends between. Hand-built: the marks
+    /// carry gradients, not a style scale, so Charts has no legend to offer.
+    private var legend: some View {
+        HStack(spacing: 12) {
+            ForEach(ActivityState.allCases) { state in
+                HStack(spacing: 4) {
+                    Circle().fill(ActivityPalette.chartColor(state)).frame(width: 8, height: 8)
+                    Text(state.label)
+                }
+            }
+        }
+        .font(.caption).foregroundStyle(.secondary)
+    }
+
     // MARK: - Hover
 
     /// What the pointer is over, plus where to draw the card.
@@ -165,7 +190,7 @@ struct AnalysisView: View {
     private static let cardSize = CGSize(width: 190, height: 96)
 
     /// Map a pointer position to the block under it. Blocks — not raw segments —
-    /// because at 260pt over ~13 hours one minute is about a third of a point, so a
+    /// because over ~13 hours one minute is a fraction of a point, so a
     /// two-minute `present` segment is sub-pixel and cannot be aimed at.
     private func hoverInfo(at point: CGPoint, proxy: ChartProxy, geo: GeometryProxy) -> HoverInfo? {
         guard let plotFrame = proxy.plotFrame else { return nil }
@@ -225,25 +250,30 @@ struct AnalysisView: View {
 
     // MARK: - Chart data & scales
 
-    /// One vertical span in a day column. Precomputed (a single flat array) so the
-    /// Chart body type-checks quickly.
-    struct SegPoint: Identifiable {
+    /// One vertical span in a day column: a work or break block, painted as a
+    /// gradient of the states inside it. A day holds a hundred-odd minute-level
+    /// segments; drawn one by one they stripe, so each block is one mark whose
+    /// colour drifts between operating, present and away as the shares change.
+    struct BlockPoint: Identifiable {
         let id: String
         let date: String
-        let stateLabel: String
         let startHour: Double
         let endHour: Double
+        let style: LinearGradient
     }
 
-    private var segmentPoints: [SegPoint] {
+    private func makeBlockPoints() -> [BlockPoint] {
         days.flatMap { day in
-            day.segments.map { seg in
-                SegPoint(
-                    id: "\(day.date)-\(seg.startUnix)-\(seg.state)",
+            day.blocks.map { b in
+                let mixes = b.kind == .break
+                    ? [StateMix.allAway]
+                    : Shading.mixes(segments: day.segments, startUnix: b.startUnix, endUnix: b.endUnix)
+                return BlockPoint(
+                    id: "\(day.date)-\(b.startUnix)",
                     date: day.date,
-                    stateLabel: seg.activityState.label,
-                    startHour: day.hours(seg.startUnix),
-                    endHour: day.hours(seg.endUnix))
+                    startHour: day.hours(b.startUnix),
+                    endHour: day.hours(b.endUnix),
+                    style: ActivityPalette.gradient(mixes, in: environment))
             }
         }
     }
@@ -260,32 +290,9 @@ struct AnalysisView: View {
         return (max(0, (lo - 0.5).rounded(.down)), (hi + 0.5).rounded(.up))
     }
 
-    private var hourTicks: [Double] {
-        let (lo, hi) = hoursBounds
-        let step = (hi - lo) > 10 ? 3.0 : 2.0
-        var ticks: [Double] = []
-        var h = lo.rounded(.up)
-        while h <= hi {
-            ticks.append(h)
-            h += step
-        }
-        return ticks
-    }
+    private var hourTicks: [Double] { Format.hourTicks(lo: hoursBounds.lo, hi: hoursBounds.hi) }
 
-    /// Thin the day (x) labels to ~12 so long ranges don't crowd.
-    private var xTicks: [String] {
-        let keys = days.map(\.date)
-        guard keys.count > 12 else { return keys }
-        let step = Int(ceil(Double(keys.count) / 12))
-        var out: [String] = []
-        var i = 0
-        while i < keys.count {
-            out.append(keys[i])
-            i += step
-        }
-        if let last = keys.last, out.last != last { out.append(last) }
-        return out
-    }
+    private var xTicks: Set<String> { Set(Format.thinned(days.map(\.date), max: 12)) }
 
     // MARK: - Per-day work log
 

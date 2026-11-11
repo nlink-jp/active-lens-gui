@@ -6,6 +6,27 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **The analysis timeline paints each block as a gradient of its states, not
+  minute-level segments.** A day holds a hundred-odd operating/present/away
+  segments; drawn one by one they blended into unreadable stripes. Each work
+  block is now one mark whose colour drifts between operating (green), present
+  (blue) and away (gray) by their share of each half hour; a break is gray.
+- **Every period fits the window; the timeline no longer scrolls sideways.** At
+  90 days the columns narrow instead. The horizontal scroller was an overlay
+  that was all but invisible, and scrolling carried the time axis and the legend
+  off screen.
+- The timeline takes the window's spare height (the work log keeps a fixed
+  height and scrolls), day labels are horizontal, and the time axis uses 6-hour
+  steps when a multi-day session stretches it.
+
+### Fixed
+
+- Day labels are actually thinned on long periods. Charts marks every category
+  of a string axis whatever `values:` is given, so 30 and 90 days were labeled on
+  every column.
+
 ### Fixed
 
 - The release zip no longer carries AppleDouble (`._*`) entries: the app is

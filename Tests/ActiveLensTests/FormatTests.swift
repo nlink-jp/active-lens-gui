@@ -20,11 +20,6 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.shortDay("weird"), "weird")
     }
 
-    func testChartScaleAligned() {
-        XCTAssertEqual(ActivityPalette.chartDomain, ["Operating", "Present", "Away"])
-        XCTAssertEqual(ActivityPalette.chartRange.count, 3)
-    }
-
     func testMidnightEpochRoundTrip() {
         // midnightEpoch(date) + hours back to a known clock time.
         let mid = Format.midnightEpoch("2026-07-09")
@@ -77,6 +72,29 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.carryNote(try day(false, true)),
                        "Continues into the next day: work ran past 05:00.")
         XCTAssertNil(Format.carryNote(try day(false, false)))
+    }
+
+    func testHourTicksWidenWithSpan() {
+        XCTAssertEqual(Format.hourTicks(lo: 8, hi: 16), [8, 10, 12, 14, 16])
+        XCTAssertEqual(Format.hourTicks(lo: 2, hi: 23), [2, 5, 8, 11, 14, 17, 20, 23])
+        // A two-day session: 6-hour steps, not a label every few points.
+        XCTAssertEqual(Format.hourTicks(lo: 0, hi: 48), [0, 6, 12, 18, 24, 30, 36, 42, 48])
+    }
+
+    func testThinnedKeepsShortListsAndTheNewestDay() {
+        let week = (1...7).map { "d\($0)" }
+        XCTAssertEqual(Format.thinned(week, max: 12), week)
+
+        let ninety = (0..<90).map { "d\($0)" }
+        let out = Format.thinned(ninety, max: 12)
+        XCTAssertLessThanOrEqual(out.count, 13)
+        XCTAssertEqual(out.first, "d0")
+        XCTAssertEqual(out.last, "d89")
+        XCTAssertEqual(Set(out).count, out.count)
+
+        // step 8 lands on d88; the forced last label d89 replaces it rather
+        // than sitting on top of it.
+        XCTAssertFalse(out.contains("d88"))
     }
 
 }

@@ -11,9 +11,11 @@ which does all the sampling, storage, and aggregation.
   split and its breaks — plus today's total and a switch to enable background
   recording (installs a login-time launchd agent).
 - **Analysis window**: a calendar-style **work timeline** — one column per day,
-  time running down each column, colored by state — so you can scan across days
-  and see *when* you were at the machine. Hover any block for its start, end, and
-  duration. Below it, a per-day work log (start → end · active · breaks). Over the
+  time running down each column, its colour drifting between operating (green),
+  present (blue) and away (gray) as the mix changes — so you can scan across days
+  and see *when* you were at the machine and how. Every period fits the window:
+  at 90 days the columns narrow rather than scroll. Hover any block for its
+  start, end, duration, and operating/present split. Below it, a per-day work log (start → end · active · breaks). Over the
   last 7 / 30 / 90 days, rendered with Swift Charts.
 
 The three states:

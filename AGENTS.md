@@ -33,11 +33,12 @@ Sources/ActiveLens/
                        instance guard (pure; pids in, decision out)
   App.swift            MenuBarExtra (state icon + the now-session's active time) + Analysis Window
   PopoverView.swift    the now-session (open/paused) + Today total + Record-in-background toggle
-  AnalysisView.swift   Swift Charts: calendar work-timeline (day columns) + block hover + work-log list
+  AnalysisView.swift   Swift Charts: calendar work-timeline (day columns of work/break blocks) + block hover + work-log list
   ActivityModel.swift  ObservableObject; 60s refresh; App Nap opt-out; CLI calls off-main
   CLIRunner.swift      locate + run the CLI, decode --json (PURE resolveBinary)
   Models.swift         Codable mirrors of the CLI JSON (Timeline/Now/DaemonStatus/…)
   Formatting.swift     PURE duration/axis formatting + the state color palette
+  Shading.swift        PURE state shares per time slice + the block gradient
 Tests/ActiveLensTests/ Format, binary resolution, decode, status/recording
 Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
 ```
@@ -78,11 +79,24 @@ Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
   is deliberately not clamped to 24: a session filed under the day it began may
   run past that day's own 24 hours. Axis labels map offsets back to wall clock via
   `Format.clockLabel`.
-- **Hover hit-tests `blocks`, never `segments`.** At 260pt over ~13 hours one
-  minute is ~0.33pt, so raw segments are sub-pixel and the one under the cursor is
-  effectively random. `TimelineDay.block(atHours:)` is pure and tested.
-- Chart colors: operating=green, present=blue, away=gray — one palette
-  (`ActivityPalette`) shared by popover dots and chart scales.
+- **The timeline draws and hover-tests `blocks`, never `segments`.** Over ~13
+  hours one minute is a fraction of a point, so raw segments are sub-pixel: drawn,
+  they blend into stripes; hovered, the one under the cursor is effectively
+  random. `TimelineDay.block(atHours:)` is pure and tested.
+- **The timeline never scrolls sideways.** All periods fit the window's width
+  (columns narrow at 90 days), so the time axis and legend stay on screen. Two
+  Charts quirks live here: a string x axis marks every category whatever
+  `values:` says (filter inside the `AxisMarks` closure), and a label wider than
+  its column is truncated unless given a fixed-width frame.
+- Colors: operating=green, present=blue, away=gray — one palette
+  (`ActivityPalette`) shared by the popover, the hover card and the chart.
+- **A block is painted as a gradient of state shares** (`Shading.mixes`, pure
+  and tested): its segments are cut into 30-minute slices and each slice's
+  colour is the three state colours blended by share. That is drawing
+  resolution, not aggregation — it applies no threshold and decides no state;
+  what a block or a break is remains the engine's call. Marks carry a
+  `LinearGradient`, so Charts offers no legend: the legend is hand-built, and
+  the marks are cached in `@State` because hover re-evaluates the body.
 - **Notification clicks launch by bundle ID — enforce a single instance.**
   Clicking a banner makes notificationd open the app via LaunchServices,
   which resolves `jp.nlink.active-lens-gui` among *all* registered copies

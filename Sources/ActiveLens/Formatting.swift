@@ -42,6 +42,35 @@ enum Format {
         return String(format: "%d:00", (hour + 24) % 24)
     }
 
+    /// Hour ticks for the timeline's time axis between two offsets. The step
+    /// widens with the span so a column stretched by a two-day session still
+    /// gets a readable number of labels rather than one every few points.
+    static func hourTicks(lo: Double, hi: Double) -> [Double] {
+        let span = hi - lo
+        let step: Double = span > 30 ? 6 : span > 10 ? 3 : 2
+        var ticks: [Double] = []
+        var h = lo.rounded(.up)
+        while h <= hi {
+            ticks.append(h)
+            h += step
+        }
+        return ticks
+    }
+
+    /// Thin a list of axis keys to about `max` evenly spaced ones, always
+    /// keeping the last (the newest day) so the right edge is labeled.
+    static func thinned(_ keys: [String], max: Int) -> [String] {
+        guard max > 0, keys.count > max else { return keys }
+        let step = Int(ceil(Double(keys.count) / Double(max)))
+        var out = stride(from: 0, to: keys.count, by: step).map { keys[$0] }
+        if let last = keys.last, out.last != last {
+            // Drop a neighbour that would collide with the forced last label.
+            if (keys.count - 1) % step < (step + 1) / 2 { out.removeLast() }
+            out.append(last)
+        }
+        return out
+    }
+
     /// "(+1)" when the day's work ended on the following calendar day.
     static func nextDayMark(_ d: TimelineDay) -> String {
         guard d.hasWork else { return "" }
@@ -91,8 +120,4 @@ enum ActivityPalette {
         }
     }
 
-    /// Concrete color range aligned to ActivityState.allCases order — for
-    /// Swift Charts' foreground style scale.
-    static var chartDomain: [String] { ActivityState.allCases.map(\.label) }
-    static var chartRange: [Color] { ActivityState.allCases.map(color) }
 }
