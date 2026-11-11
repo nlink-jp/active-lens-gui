@@ -47,16 +47,39 @@ final class BinaryResolutionTests: XCTestCase {
 
     // A child that writes more than a pipe holds to stderr must not hang the
     // call, whether it then succeeds or fails.
+    //
+    // The calls run off the test's thread with a deadline: the defect this
+    // guards against is a deadlock, and a deadlock inline would hang the suite
+    // instead of failing the test.
     func testRunDrainsStderrWhileReadingStdout() throws {
         let noisy = "head -c 300000 /dev/zero | tr '\\0' 'e' >&2; printf ok"
-        let out = try CLIRunner.run(executable: "/bin/sh", ["-c", noisy])
-        XCTAssertEqual(String(data: out, encoding: .utf8), "ok")
+        let finished = expectation(description: "both calls return")
+        DispatchQueue.global().async {
+            let out = try? CLIRunner.run(executable: "/bin/sh", ["-c", noisy])
+            XCTAssertEqual(out.flatMap { String(data: $0, encoding: .utf8) }, "ok")
 
-        XCTAssertThrowsError(try CLIRunner.run(executable: "/bin/sh", ["-c", noisy + "; exit 3"])) { error in
-            guard case CLIError.runFailed(_, let detail) = error else {
-                return XCTFail("unexpected error: \(error)")
+            do {
+                _ = try CLIRunner.run(executable: "/bin/sh", ["-c", noisy + "; exit 3"])
+                XCTFail("a non-zero exit did not throw")
+            } catch CLIError.runFailed(_, let detail) {
+                XCTAssertEqual(detail.count, 300_000, "the whole of stderr is kept for the detail")
+            } catch {
+                XCTFail("unexpected error: \(error)")
             }
-            XCTAssertEqual(detail.count, 300_000, "the whole of stderr is kept for the detail")
+            finished.fulfill()
         }
+        wait(for: [finished], timeout: 20)
+    }
+
+    // A grandchild that keeps stderr open must not hold the call past the
+    // child's exit by more than the drain's grace period.
+    func testRunDoesNotWaitForeverOnAStderrHeldOpen() throws {
+        let finished = expectation(description: "the call returns")
+        DispatchQueue.global().async {
+            let out = try? CLIRunner.run(executable: "/bin/sh", ["-c", "(sleep 30 >/dev/null) & printf ok"])
+            XCTAssertEqual(out.flatMap { String(data: $0, encoding: .utf8) }, "ok")
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 15)
     }
 }

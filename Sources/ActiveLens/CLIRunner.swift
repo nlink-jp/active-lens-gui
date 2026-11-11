@@ -117,18 +117,21 @@ enum CLIRunner {
             throw CLIError.launchFailed(detail: error.localizedDescription)
         }
         let errBox = DataBox()
+        // (errBox is read below only after the drain finished or was given up on.)
         let errDone = DispatchGroup()
         errDone.enter()
         DispatchQueue.global(qos: .utility).async {
-            errBox.data = errPipe.fileHandleForReading.readDataToEndOfFile()
+            errBox.set(errPipe.fileHandleForReading.readDataToEndOfFile())
             errDone.leave()
         }
         let data = outPipe.fileHandleForReading.readDataToEndOfFile()
-        errDone.wait()
         proc.waitUntilExit()
+        // The child has exited and its stdout is closed. stderr normally closes
+        // with it; a grandchild still holding it must not hold this call too.
+        _ = errDone.wait(timeout: .now() + 5)
         if proc.terminationStatus != 0 {
             let stderr = String(
-                data: errBox.data,
+                data: errBox.snapshot(),
                 encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let crashed = proc.terminationReason == .uncaughtSignal
             throw CLIError.runFailed(
@@ -177,8 +180,11 @@ enum CLIRunner {
     static func uninstall() throws { _ = try run(["uninstall"]) }
 }
 
-/// Carries the stderr bytes from the draining thread back to the caller. The
-/// group's wait orders the write before the read.
+/// Carries the stderr bytes from the draining thread back to the caller. Locked,
+/// because the caller stops waiting for the drain after a few seconds.
 private final class DataBox: @unchecked Sendable {
-    var data = Data()
+    private let lock = NSLock()
+    private var data = Data()
+    func set(_ d: Data) { lock.lock(); data = d; lock.unlock() }
+    func snapshot() -> Data { lock.lock(); defer { lock.unlock() }; return data }
 }
