@@ -6,6 +6,22 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+### Changed
+
+- **Bundles `active-lens` v0.4.0, which counts no input just before an absence
+  as the absence.** The stretch between your last input and the display-sleep
+  timer firing used to be counted as active time. It is now away when the
+  display then stays off for a minute (up to 10 minutes of it by default). **Every
+  figure this app shows changes, history included**: on the record the engine
+  change was designed against, active time fell by 8.5%, breaks begin and days
+  end about ten minutes earlier, and more absences count as breaks. The menu
+  bar's active time steps back by up to ten minutes about a minute after you
+  leave. Set `work.idle_before_away_minutes = 0` in the CLI's config for the
+  previous numbers. See the engine's
+  [ADR 0003](https://github.com/nlink-jp/active-lens/blob/main/docs/en/adr/0003-idle-before-away.md).
+
 ## [0.4.0] - 2026-11-11
 
 ### Changed
@@ -173,7 +189,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.0...v0.3.1

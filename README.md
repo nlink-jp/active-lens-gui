@@ -24,6 +24,12 @@ The three states:
 - **present** — awake, display on, no recent input (watching / reading)
 - **away** — display off, locked, or asleep
 
+No input just before the display goes off and stays off — up to ten minutes by
+default — is counted as away, not present: you had already left. The engine
+decides this (`work.idle_before_away_minutes` in the CLI's config; `0` turns it
+off), so the active time in the menu bar steps back by up to that long a minute
+after you leave.
+
 > **Platform:** macOS 14+ on Apple Silicon. Developer ID signed + notarized.
 
 ## Sessions, not days
