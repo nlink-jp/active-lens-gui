@@ -44,4 +44,19 @@ final class BinaryResolutionTests: XCTestCase {
         )
         XCTAssertNil(got)
     }
+
+    // A child that writes more than a pipe holds to stderr must not hang the
+    // call, whether it then succeeds or fails.
+    func testRunDrainsStderrWhileReadingStdout() throws {
+        let noisy = "head -c 300000 /dev/zero | tr '\\0' 'e' >&2; printf ok"
+        let out = try CLIRunner.run(executable: "/bin/sh", ["-c", noisy])
+        XCTAssertEqual(String(data: out, encoding: .utf8), "ok")
+
+        XCTAssertThrowsError(try CLIRunner.run(executable: "/bin/sh", ["-c", noisy + "; exit 3"])) { error in
+            guard case CLIError.runFailed(_, let detail) = error else {
+                return XCTFail("unexpected error: \(error)")
+            }
+            XCTAssertEqual(detail.count, 300_000, "the whole of stderr is kept for the detail")
+        }
+    }
 }

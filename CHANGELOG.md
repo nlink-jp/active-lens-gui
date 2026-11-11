@@ -6,6 +6,15 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- A CLI call can no longer hang on a child that writes a lot to stderr. stdout
+  was read to its end before stderr was touched, so a child filling the stderr
+  pipe blocked while the app waited on stdout. (Not reachable with the bundled
+  CLI, which writes a line at most.)
+- A debug build (`make run`) finds the CLI built in the sibling repository; the
+  path it looked in predated the repository's move.
+
 ## [0.6.0] - 2026-11-11
 
 ### Changed

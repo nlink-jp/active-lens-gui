@@ -57,7 +57,9 @@ enum CLIRunner {
         var devPaths: [String] = []
         #if DEBUG
         allowEnvOverride = true
-        devPaths = [NSHomeDirectory() + "/works/nlink-jp/_wip/active-lens/dist/active-lens"]
+        // Where `make build` / `make package` in the sibling CLI repo leave it.
+        let dist = NSHomeDirectory() + "/works/nlink-jp/util-series/active-lens/dist/"
+        devPaths = [dist + "active-lens", dist + "active-lens-darwin-arm64"]
         #endif
         return resolveBinary(
             env: ProcessInfo.processInfo.environment,
@@ -92,6 +94,16 @@ enum CLIRunner {
     @discardableResult
     static func run(_ args: [String]) throws -> Data {
         guard let bin = findBinary() else { throw CLIError.binaryNotFound }
+        return try run(executable: bin, args)
+    }
+
+    /// Run one executable to completion and return its stdout.
+    ///
+    /// stderr is drained on another thread while stdout is read. Read one after
+    /// the other, a child that fills the stderr pipe (about 64 KB) blocks on
+    /// its write while this side waits for stdout to close: both wait forever.
+    @discardableResult
+    static func run(executable bin: String, _ args: [String]) throws -> Data {
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: bin)
         proc.arguments = args
@@ -104,11 +116,19 @@ enum CLIRunner {
         } catch {
             throw CLIError.launchFailed(detail: error.localizedDescription)
         }
+        let errBox = DataBox()
+        let errDone = DispatchGroup()
+        errDone.enter()
+        DispatchQueue.global(qos: .utility).async {
+            errBox.data = errPipe.fileHandleForReading.readDataToEndOfFile()
+            errDone.leave()
+        }
         let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+        errDone.wait()
         proc.waitUntilExit()
         if proc.terminationStatus != 0 {
             let stderr = String(
-                data: errPipe.fileHandleForReading.readDataToEndOfFile(),
+                data: errBox.data,
                 encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let crashed = proc.terminationReason == .uncaughtSignal
             throw CLIError.runFailed(
@@ -155,4 +175,10 @@ enum CLIRunner {
 
     static func install() throws { _ = try run(["install"]) }
     static func uninstall() throws { _ = try run(["uninstall"]) }
+}
+
+/// Carries the stderr bytes from the draining thread back to the caller. The
+/// group's wait orders the write before the read.
+private final class DataBox: @unchecked Sendable {
+    var data = Data()
 }
