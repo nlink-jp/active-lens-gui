@@ -6,6 +6,22 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-12
+
+### Changed
+
+- **Bundles `active-lens` v0.6.0: the totals and the timeline are read the same
+  way.** The day and range totals read only the samples inside their window, so
+  at a window's first and last minutes they could differ from the timeline by a
+  brief visit (up to 2 minutes) or a no-input stretch (up to 10). They now agree
+  about every instant, and a past day totals 24 hours. On a Mac that never
+  sleeps almost nothing moves (checked on 125 days: operating and present
+  identical, away up by 6 seconds).
+- Where the record has a break longer than 48 hours — the Mac off for a long
+  weekend — a day inside the break is counted as away whatever range it is shown
+  in, and the timeline around the break reads as the whole record does. A record
+  without such a break reads as before.
+
 ### Fixed
 
 - A CLI call can no longer hang on a child that writes a lot to stderr. stdout
@@ -231,7 +247,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.3.2...v0.4.0

@@ -24,7 +24,7 @@ CLI_BIN ?= $(firstword $(wildcard ../active-lens/dist/active-lens-darwin-arm64 .
 # (CLIRunner.findBinary), so a GUI user cannot pick up a CLI fix any other way.
 # verify-release refuses a bundle whose binary does not report this version.
 # Bump it in the same commit that bundles a newer CLI.
-CLI_VERSION ?= v0.5.0
+CLI_VERSION ?= v0.6.0
 
 # macOS Developer ID signing / notarization (see nlink-jp/.github CONVENTIONS.md
 # §Code Signing → GUI apps). Pure SwiftUI/AppKit needs no JIT entitlements —
