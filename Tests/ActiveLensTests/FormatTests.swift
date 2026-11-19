@@ -41,11 +41,34 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.clockLabel(offsetHours: 13, dayStartHour: 0), "13:00")
     }
 
-    func testPeriodDays() {
-        XCTAssertEqual(ActivityModel.periodDays("7d"), 7)
-        XCTAssertEqual(ActivityModel.periodDays("90d"), 90)
-        XCTAssertEqual(ActivityModel.periodDays("nonsense"), 7)
-        XCTAssertEqual(ActivityModel.periodDays("0d"), 7)
+    func testPeriodTimelineArgs() {
+        XCTAssertEqual(Period.lastDays(7).timelineArgs, ["timeline", "--days", "7", "--json"])
+        XCTAssertEqual(Period.lastDays(90).timelineArgs, ["timeline", "--days", "90", "--json"])
+        XCTAssertEqual(Period.lastDays(0).timelineArgs, ["timeline", "--days", "1", "--json"])
+        // The month is resolved by the CLI; the app sends no dates.
+        XCTAssertEqual(Period.thisMonth.timelineArgs, ["timeline", "--month", "--json"])
+    }
+
+    func testPeriodChoicesIncludeThisMonth() {
+        XCTAssertEqual(Period.choices, [.lastDays(7), .lastDays(30), .lastDays(90), .thisMonth])
+        XCTAssertEqual(Period.thisMonth.pickerLabel, "This month")
+        XCTAssertEqual(Period.lastDays(30).pickerLabel, "30 days")
+    }
+
+    func testPeriodTitle() {
+        XCTAssertEqual(Period.lastDays(30).title(since: "2026-10-21"), "Last 30 days")
+        // The month comes from the timeline's first day — the CLI's logical
+        // month — so on the 1st before the day boundary it names last month.
+        XCTAssertEqual(Period.thisMonth.title(since: "2026-10-01"), "This month · 2026-10")
+        XCTAssertEqual(Period.thisMonth.title(since: nil), "This month")
+        XCTAssertEqual(Period.thisMonth.title(since: "garbage"), "This month")
+    }
+
+    func testMonthTitle() {
+        XCTAssertEqual(Format.monthTitle("2026-11-01"), "2026-11")
+        XCTAssertEqual(Format.monthTitle("2027-01-01"), "2027-01")
+        XCTAssertNil(Format.monthTitle("2026-11"))
+        XCTAssertNil(Format.monthTitle(""))
     }
     /// carryNote must cover the both-ends case too: a day entirely inside one
     /// long stretch of work is carried in *and* out, and it is reachable — a full

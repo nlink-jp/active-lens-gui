@@ -52,9 +52,9 @@ final class StatusTests: XCTestCase {
         XCTAssertFalse(s.isRecording(now: now))
     }
 
-    // The range is no longer computed here: `timeline --days N` resolves it against
-    // the CLI's own logical day boundary. Only the period → N mapping remains, and
-    // it is covered by FormatTests.testPeriodDays.
+    // The range is no longer computed here: `timeline --days N` / `--month`
+    // resolve it against the CLI's own logical day boundary. Only the period →
+    // arguments mapping remains, covered by FormatTests.testPeriodTimelineArgs.
 
     func testSummarizeErrors() {
         XCTAssertTrue(CLIError.summarize(exitCode: 1, crashed: true, stderr: "").contains("stopped unexpectedly"))

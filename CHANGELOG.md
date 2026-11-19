@@ -6,6 +6,13 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **This month** in the analysis window's period picker: the current month from
+  its first logical day through now, resolved by the bundled CLI's
+  `timeline --month`. The header names the month shown, which just after
+  midnight on the 1st (before the logical day begins) is still the previous one.
+
 ## [0.6.1] - 2026-11-12
 
 ### Changed

@@ -26,7 +26,7 @@ The dot under the toggle turns green once the first sample lands ("Recording").
   operating/present split, its breaks, and **Today**'s total beneath them. While
   you are briefly away it reads *paused*, not finished.
 - **Analysis…** opens the calendar-style work timeline — one column per day, time
-  down each column — plus a per-day work log, over the last 7 / 30 / 90 days.
+  down each column — plus a per-day work log, over the last 7 / 30 / 90 days or this month.
   A column's colour drifts between operating (green), present (blue) and away
   (gray) as the mix changes, and every period fits the window without scrolling.
   Hover a block to see its start, end, duration, and operating/present split. An evening that ran past

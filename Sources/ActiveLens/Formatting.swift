@@ -101,6 +101,20 @@ enum Format {
         return Int(d.timeIntervalSince1970)
     }
 
+    /// "2026-11" for a "yyyy-MM-dd" date string, or nil when it is not one. The
+    /// app writes dates numerically ("11-01"), so the month is written that way
+    /// too rather than in the system locale's words inside an English UI. Pure.
+    static func monthTitle(_ dateString: String) -> String? {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        guard let d = f.date(from: dateString) else { return nil }
+        f.dateFormat = "yyyy-MM"
+        return f.string(from: d)
+    }
+
     private static let dayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.calendar = Calendar(identifier: .gregorian)

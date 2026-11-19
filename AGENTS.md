@@ -66,8 +66,11 @@ Info.plist  Makefile  scripts/{codesign,notarize}-darwin-app.sh, make-icns.sh
   GUI and `active-lens report` never disagree.
 - **The menu bar's unit is a session, not a day.** Read `now --json`; never
   reconstruct "today" by looking a date up in the timeline. Do not compute date
-  ranges either — `timeline --days N` resolves them against the CLI's logical day
-  boundary. Both were removed for reimplementing engine arithmetic.
+  ranges either — `timeline --days N` / `timeline --month` resolve them against
+  the CLI's logical day boundary (`Period.timelineArgs`). The *This month* header
+  takes its month from the timeline's `since`, never from the local clock, and
+  names the period the shown timeline was loaded for (`timelinePeriod`), not the
+  picker's. Both were removed for reimplementing engine arithmetic.
 - **The engine decides where a day is cut; this app only says so.** With the
   CLI's `work.day_boundary = "strict"` a session is ended at the logical day
   boundary, which makes `work_start` the boundary itself and restarts the

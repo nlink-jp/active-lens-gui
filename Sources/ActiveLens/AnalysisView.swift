@@ -40,9 +40,9 @@ struct AnalysisView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Picker("Period", selection: $model.period) {
-                    Text("7 days").tag("7d")
-                    Text("30 days").tag("30d")
-                    Text("90 days").tag("90d")
+                    ForEach(Period.choices, id: \.self) { p in
+                        Text(p.pickerLabel).tag(p)
+                    }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -77,11 +77,10 @@ struct AnalysisView: View {
         }
     }
 
+    /// Names the data on screen, not the picker: until the CLI answers for a new
+    /// period the old timeline is still the one shown.
     private var periodLabel: String {
-        if model.period.hasSuffix("d"), let n = Int(model.period.dropLast()) {
-            return "Last \(n) days"
-        }
-        return "Selected period"
+        (model.timelinePeriod ?? model.period).title(since: model.timeline?.since)
     }
 
     // MARK: - Timeline (day columns)

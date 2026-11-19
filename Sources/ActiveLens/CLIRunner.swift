@@ -163,11 +163,10 @@ enum CLIRunner {
         try JSONDecoder().decode(NowReport.self, from: run(["now", "--json"]))
     }
 
-    /// The last `days` logical days. The CLI resolves the range against its own
-    /// day boundary, so this app never reimplements that arithmetic.
-    static func timeline(days: Int) throws -> TimelineReport {
-        try JSONDecoder().decode(
-            TimelineReport.self, from: run(["timeline", "--days", String(days), "--json"]))
+    /// The timeline for an analysis period. The CLI resolves the range against
+    /// its own day boundary, so this app never reimplements that arithmetic.
+    static func timeline(_ period: Period) throws -> TimelineReport {
+        try JSONDecoder().decode(TimelineReport.self, from: run(period.timelineArgs))
     }
 
     static func timeline(since: String, until: String? = nil) throws -> TimelineReport {
