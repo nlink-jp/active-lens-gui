@@ -16,10 +16,11 @@ which does all the sampling, storage, and aggregation.
   and see *when* you were at the machine and how. Every period fits the window:
   at 90 days the columns narrow rather than scroll. Hover any block for its
   start, end, duration, and operating/present split. Below it, a per-day work log (start → end · active · breaks). Over the
-  last 7 / 30 / 90 days or this month, rendered with Swift Charts. *This month*
-  runs from the month's first logical day through now, so just after midnight on
-  the 1st (before the logical day begins) it still shows the previous month; the
-  header names the month shown.
+  last 7 / 30 / 90 days, last month or this month, rendered with Swift Charts.
+  *This month* runs from the month's first logical day through now, so just after
+  midnight on the 1st (before the logical day begins) it still shows the previous
+  month; *Last month* is the whole month before it. The header names the month
+  shown.
 
 The three states:
 

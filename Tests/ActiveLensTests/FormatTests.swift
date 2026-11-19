@@ -47,11 +47,13 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Period.lastDays(0).timelineArgs, ["timeline", "--days", "1", "--json"])
         // The month is resolved by the CLI; the app sends no dates.
         XCTAssertEqual(Period.thisMonth.timelineArgs, ["timeline", "--month", "--json"])
+        XCTAssertEqual(Period.lastMonth.timelineArgs, ["timeline", "--last-month", "--json"])
     }
 
-    func testPeriodChoicesIncludeThisMonth() {
-        XCTAssertEqual(Period.choices, [.lastDays(7), .lastDays(30), .lastDays(90), .thisMonth])
+    func testPeriodChoicesIncludeBothMonths() {
+        XCTAssertEqual(Period.choices, [.lastDays(7), .lastDays(30), .lastDays(90), .lastMonth, .thisMonth])
         XCTAssertEqual(Period.thisMonth.pickerLabel, "This month")
+        XCTAssertEqual(Period.lastMonth.pickerLabel, "Last month")
         XCTAssertEqual(Period.lastDays(30).pickerLabel, "30 days")
     }
 
@@ -62,6 +64,9 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Period.thisMonth.title(since: "2026-10-01"), "This month · 2026-10")
         XCTAssertEqual(Period.thisMonth.title(since: nil), "This month")
         XCTAssertEqual(Period.thisMonth.title(since: "garbage"), "This month")
+        // Last month is named from its own first day, which the CLI resolved.
+        XCTAssertEqual(Period.lastMonth.title(since: "2026-10-01"), "Last month · 2026-10")
+        XCTAssertEqual(Period.lastMonth.title(since: nil), "Last month")
     }
 
     func testMonthTitle() {

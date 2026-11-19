@@ -128,14 +128,18 @@ enum Period: Hashable {
     /// The current month: its first logical day through now. The month is the
     /// logical day's, so just after midnight on the 1st it is still last month.
     case thisMonth
+    /// The whole of the month before `thisMonth`.
+    case lastMonth
 
-    /// The choices offered in the picker, in order.
-    static let choices: [Period] = [.lastDays(7), .lastDays(30), .lastDays(90), .thisMonth]
+    /// The choices offered in the picker, in order. The two months read left to
+    /// right in time, as the chart's columns do.
+    static let choices: [Period] = [.lastDays(7), .lastDays(30), .lastDays(90), .lastMonth, .thisMonth]
 
     var pickerLabel: String {
         switch self {
         case .lastDays(let n): return "\(n) days"
         case .thisMonth: return "This month"
+        case .lastMonth: return "Last month"
         }
     }
 
@@ -144,6 +148,7 @@ enum Period: Hashable {
         switch self {
         case .lastDays(let n): return ["timeline", "--days", String(max(n, 1)), "--json"]
         case .thisMonth: return ["timeline", "--month", "--json"]
+        case .lastMonth: return ["timeline", "--last-month", "--json"]
         }
     }
 
@@ -154,11 +159,11 @@ enum Period: Hashable {
         switch self {
         case .lastDays(let n):
             return "Last \(n) days"
-        case .thisMonth:
+        case .thisMonth, .lastMonth:
             guard let since, let month = Format.monthTitle(since) else {
-                return "This month"
+                return pickerLabel
             }
-            return "This month · \(month)"
+            return "\(pickerLabel) · \(month)"
         }
     }
 }
