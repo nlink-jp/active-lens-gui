@@ -6,11 +6,18 @@ All notable changes to ActiveLens (GUI) are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-19
+
 ### Added
 
 - **Last month** in the analysis window's period picker, left of *This month*:
   the whole of the month before the current one, resolved by the bundled CLI's
   `timeline --last-month`. The header names the month shown.
+
+### Changed
+
+- Bundles `active-lens` v0.8.0, which adds `timeline --last-month` /
+  `report --last-month`.
 
 ## [0.7.0] - 2026-11-19
 
@@ -266,7 +273,8 @@ Packaging-only release; no change to the app's behaviour.
 - Developer ID signed + notarizable `.app` (Hardened Runtime), with the CLI
   bundled in `Contents/Resources`.
 
-[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/nlink-jp/active-lens-gui/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/nlink-jp/active-lens-gui/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/nlink-jp/active-lens-gui/compare/v0.5.0...v0.6.0
